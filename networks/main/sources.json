@@ -3,29 +3,36 @@
   "sources": [
     {
       "sourceID": "murphy",
-      "url": "keetanet://keeta_athqkb6yw6h2e436xxaakuy4bctrqkqfctvy5xsp3ugvb3avv56zruxjcxauq/metadata"
+      "url": "keetanet://keeta_athqkb6yw6h2e436xxaakuy4bctrqkqfctvy5xsp3ugvb3avv56zruxjcxauq/metadata",
+      "exclude": ["fx/murphy-alpaca"],
+      "rename": {"fx/murphy": "fx/murphy@murf.fi"}
     },
     {
       "sourceID": "changenow",
-      "url": "keetanet://keeta_aabfqkxq6dinrdwermtn3n6uf7q2uudqzov3pn3pbrkjtebr45uspgiva2epm2a/metadata"
+      "url": "keetanet://keeta_aabfqkxq6dinrdwermtn3n6uf7q2uudqzov3pn3pbrkjtebr45uspgiva2epm2a/metadata",
+      "rename": {"assetMovement/changenow-staging": "assetMovement/changenow@xescu.re"}
     },
     {
       "sourceID": "pfp",
-      "url": "keetanet://keeta_aabdoyva5z5wpnx6a7ebgpwzopbipsbzhuyp5opoj2xro2vska6jjxqip5u62wa/metadata"
+      "url": "keetanet://keeta_aabdoyva5z5wpnx6a7ebgpwzopbipsbzhuyp5opoj2xro2vska6jjxqip5u62wa/metadata",
+      "rename": {"fx/pfp_kta": "fx/kta@pfponkeeta.xyz", "fx/pfp_nft": "fx/nft@pfponkeeta.xyz"}
     },
     {
       "sourceID": "alpaca",
-      "url": "keetanet://keeta_aabyuc4ce7n7n7gyjbcszpxlawujaacpu2wj72fljjjhhhyf25xmj66gand2ori/metadata"
+      "url": "keetanet://keeta_aabyuc4ce7n7n7gyjbcszpxlawujaacpu2wj72fljjjhhhyf25xmj66gand2ori/metadata",
+      "rename": {"fx/alpaca": "fx/alpaca@alpacadex.com"}
     },
     {
       "sourceID": "keetahub",
-      "url": "keetanet://keeta_aabedhf4fmuokpj6n4tpgadoixbdi4fp7o5f53vquykusndewrllxjqywphutqy/metadata"
+      "url": "keetanet://keeta_aabedhf4fmuokpj6n4tpgadoixbdi4fp7o5f53vquykusndewrllxjqywphutqy/metadata",
+      "rename": {"kyc/keetahub-discord-kyc-anchor": "kyc/discord@keetahub.com"}
     },
     {
       "sourceID": "velocity",
       "url": "keetanet://keeta_aab2lqgwz56u6dvfbqtsadcnfc2y4wdvl7rd2pkboxoray5mj3hmdzot2neu4wq/metadata",
       "exclude": ["fx/test-anchor", "$TEST"],
-      "add": { "$KTA": "keeta_anqdilpazdekdu4acw65fj7smltcp26wbrildkqtszqvverljpwpezmd44ssg" }
+      "add": { "$KTA": "keeta_anqdilpazdekdu4acw65fj7smltcp26wbrildkqtszqvverljpwpezmd44ssg" },
+      "rename": {"fx/velo-anchor": "fx/velo@velocityonkeeta.com", "fx/launchpad-anchor": "fx/launchpad@velocityonkeeta.com"}
     }
   ]
 }
