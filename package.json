@@ -1,0 +1,18 @@
+{
+	"name": "community-resolver",
+	"version": "0.0.0",
+	"private": true,
+	"type": "module",
+	"license": "MPL-2.0",
+	"engines": {
+		"node": ">=24"
+	},
+	"dependencies": {
+		"@keetanetwork/anchor": "0.0.100",
+		"@keetanetwork/keetanet-client": "0.18.7"
+	},
+	"devDependencies": {
+		"@types/node": "24.19.1",
+		"typescript": "7.0.2"
+	}
+}
