@@ -1,4 +1,4 @@
-# Community Resolver
+# Community Resolver (BETA)
 
 Independent community project. Not affiliated with, endorsed by, or operated by Keeta or Globetrot Financial.
 
