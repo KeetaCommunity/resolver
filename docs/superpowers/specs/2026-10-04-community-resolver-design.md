@@ -263,10 +263,15 @@ and the logs use the same plain, factual style.
 3. `bin/smoke.ts` runs against mainnet. It makes a real `Resolver` with the
    community account as the root, resolves all of the root metadata, and
    deep-compares it with `dist/metadata.json`. It also checks that
-   `listTokens()` returns each currency entry. Because of edge caching, it
-   tries again for up to 3 minutes before it fails.
+   `listTokens()` returns each currency entry. It also fetches
+   `https://resolver.xescu.re/metadata.json` with an `Origin` header. The
+   response must have `Access-Control-Allow-Origin: *`,
+   `Content-Type: application/json`, and the cache header. Because of edge
+   caching, it tries again for up to 3 minutes before it fails.
 
-`dist/_headers`:
+Cloudflare Pages reads a file named `_headers` at the root of the deployed
+directory and applies the response headers in it for each path pattern. The
+source is `static/_headers`. `make dist` copies it to `dist/_headers`:
 
 ```
 /metadata.json
@@ -337,6 +342,7 @@ community-resolver/
     build.ts       snapshots + rules → dist/metadata.json
     smoke.ts       post-deploy check against mainnet
   test/
+  static/_headers
   Makefile
   .github/workflows/{detect,check,deploy}.yml
   README.md
