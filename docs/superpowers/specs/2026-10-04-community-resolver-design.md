@@ -365,6 +365,8 @@ and about 200 lines of build and CI configuration.
 - **Make** owns the build graph:
   - `dist/metadata.json` depends on `sources.json`, `snapshots/*.json`,
     `src/*.ts`, `bin/build.ts`, and the lockfile.
+  - `dist/_headers` depends on `static/_headers`. `make dist` builds both
+    files.
   - `make check` runs the type-check and the tests.
   - `fetch` and `detect` are phony targets. They have network side effects
     and are not build artifacts.
