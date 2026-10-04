@@ -254,12 +254,17 @@ and the logs use the same plain, factual style.
 
 ## 9. Deploy
 
-`.github/workflows/deploy.yml` runs on each push to `main`:
+`.github/workflows/deploy.yml` runs on each push to `main`. GitHub Actions is
+the only way to deploy. Cloudflare does not build anything.
 
-1. `make check` and `make dist`.
-2. `wrangler pages deploy dist`. This needs the Cloudflare API token and
-   the account ID as repository secrets. These are the only secrets in the
-   repository.
+1. `make check` and `make dist`. If either fails, the workflow stops and
+   nothing is deployed.
+2. `wrangler pages deploy dist --branch=main` (through
+   `cloudflare/wrangler-action`). Pages makes a new deployment that does not
+   change. Then it moves the production domain to the new deployment in one
+   step. Earlier deployments stay available for rollback. This step needs
+   the Cloudflare API token and the account ID as repository secrets. These
+   are the only secrets in the repository.
 3. `bin/smoke.ts` runs against mainnet. It makes a real `Resolver` with the
    community account as the root, resolves all of the root metadata, and
    deep-compares it with `dist/metadata.json`. It also checks that
@@ -268,6 +273,10 @@ and the logs use the same plain, factual style.
    response must have `Access-Control-Allow-Origin: *`,
    `Content-Type: application/json`, and the cache header. Because of edge
    caching, it tries again for up to 3 minutes before it fails.
+
+The workflow uses `concurrency: { group: deploy, cancel-in-progress: false }`.
+Deploys run one at a time and in order, so an older run cannot finish last
+and overwrite a newer file.
 
 Cloudflare Pages reads a file named `_headers` at the root of the deployed
 directory and applies the response headers in it for each path pattern. The
@@ -287,8 +296,11 @@ safe. The 60 s cache is the same as the default positive TTL of the SDK.
 
 ### One-time manual setup (not in CI)
 
-- Make a Cloudflare Pages project and connect the custom domain
-  `resolver.xescu.re` to it.
+- Make a Cloudflare Pages project of the type **Direct Upload**. Do not
+  connect it to Git. Connect the custom domain `resolver.xescu.re` to it.
+- Make a Cloudflare API token that has only the permission
+  `Cloudflare Pages: Edit`. Store it as the GitHub secret
+  `CLOUDFLARE_API_TOKEN`. Store the account ID as `CLOUDFLARE_ACCOUNT_ID`.
 - Set the on-chain metadata of the resolver account to
   `Resolver.Metadata.formatMetadata({ external: '2b828e33-2692-46e9-817e-9b93d63f28fd', url: 'https://resolver.xescu.re/metadata.json' })`.
   The owner of the account key signs this. The README documents the
