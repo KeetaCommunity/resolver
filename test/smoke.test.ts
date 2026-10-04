@@ -15,7 +15,7 @@ function stubResolver(root: JSONValue, tokenCount: number): RootReader {
 		tokens.push({ token: tokenAccount, currency: `C${index}` });
 	}
 	// eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-	return({ getRootMetadata: async () => root, listTokens: async () => tokens } as unknown as RootReader);
+	return({ getRootMetadata: async () => root, listTokens: async () => tokens, stats: { reads: 0 } } as unknown as RootReader);
 }
 
 const document: JSONValue = { version: 1, currencyMap: { USD: tokenAccount, EUR: tokenAccount }, services: {} };
@@ -52,7 +52,7 @@ test('compareRoot reports a token count that differs from the currency entries',
 });
 test('compareRoot reports an unresolvable root instead of throwing', async () => {
 	// eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-	const resolver = { getRootMetadata: async () => { throw(new Error('no metadata')); }, listTokens: async () => [] } as unknown as RootReader;
+	const resolver = { getRootMetadata: async () => { throw(new Error('no metadata')); }, listTokens: async () => [], stats: { reads: 0 } } as unknown as RootReader;
 	assert.deepEqual(await compareRoot(resolver, canonicalJSON(document)), ['root metadata unresolved: no metadata']);
 });
 test('retryUntilClean stops at the first clean attempt', async () => {

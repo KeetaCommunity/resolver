@@ -16,6 +16,16 @@ const communityAccount = 'keeta_aqlemsriu5wyoyzd4r5rgfn6qpndmua5tx2hx7k3vl6ustca
  */
 const maxReferenceDepth = 64;
 
+/*
+ * The SDK caches each URL but reads it again for every place that refers to
+ * it, so a document whose references fan out to shared targets takes
+ * exponentially many reads. One source never needs close to this many.
+ */
+const maxReferenceReads = 1024;
+
+// A host that never answers would otherwise stall the whole run.
+const sourceTimeoutMs = 60_000;
+
 // The SDK does not export its metadata config type.
 type MetadataConfig = ConstructorParameters<typeof Resolver.Metadata>[1];
 
@@ -55,21 +65,31 @@ function createFetchContext(options: FetchContextOptions): FetchContext {
 	return({ resolver, client, cache: new Map(), allowInsecureProtocols: options.allowInsecureProtocols });
 }
 
+// The only part of the resolver that the walk uses: its read counter.
+type ReadCounter = Pick<Resolver, 'stats'>;
+
 /*
  * Resolves every nested reference. The SDK's own fullyResolveValuizable turns
  * a failed reference into null, which would store a partly resolved snapshot,
  * so any error propagates and a null anywhere fails the whole source.
  */
-async function resolveStrict(value: unknown): Promise<JSONValue> {
-	return(await walk(value, 0));
+async function resolveStrict(value: unknown, counter: ReadCounter): Promise<JSONValue> {
+	const start = counter.stats.reads;
+	return(await walk(value, 0, () => {
+		return(counter.stats.reads - start);
+	}));
 }
 
-async function walk(value: unknown, depth: number): Promise<JSONValue> {
+async function walk(value: unknown, depth: number, reads: () => number): Promise<JSONValue> {
 	if (Resolver.Metadata.isValuizable(value)) {
 		if (depth >= maxReferenceDepth) {
 			throw(new ToolError('FETCH', 'unresolved reference: too deeply nested or looping'));
 		}
-		return(await walk(await value('any'), depth + 1));
+		const resolved = await value('any');
+		if (reads() > maxReferenceReads) {
+			throw(new ToolError('FETCH', 'too many references'));
+		}
+		return(await walk(resolved, depth + 1, reads));
 	}
 
 	if (value === null || value === undefined) {
@@ -84,7 +104,7 @@ async function walk(value: unknown, depth: number): Promise<JSONValue> {
 	if (Array.isArray(value)) {
 		const items: JSONValue[] = [];
 		for (const item of value) {
-			items.push(await walk(item, depth));
+			items.push(await walk(item, depth, reads));
 		}
 		return(items);
 	}
@@ -92,7 +112,7 @@ async function walk(value: unknown, depth: number): Promise<JSONValue> {
 	if (typeof value === 'object') {
 		const entries: [string, JSONValue][] = [];
 		for (const [key, member] of Object.entries(value)) {
-			entries.push([key, await walk(member, depth)]);
+			entries.push([key, await walk(member, depth, reads)]);
 		}
 		return(Object.fromEntries(entries));
 	}
@@ -107,17 +127,40 @@ function describeError(error: unknown): string {
 	return(String(error));
 }
 
+async function readDocument(url: string, context: FetchContext): Promise<JSONValue> {
+	const metadata = new Resolver.Metadata(url, {
+		client: context.client,
+		resolver: context.resolver,
+		trustedCAs: [],
+		cache: { instance: context.cache },
+		allowInsecureProtocols: context.allowInsecureProtocols
+	});
+	return(await resolveStrict(await metadata.value('object'), context.resolver));
+}
+
+/*
+ * The timer is cleared as soon as the read settles, so it never keeps the
+ * process alive. A read that loses the race is abandoned, not cancelled.
+ */
+async function withDeadline<T>(work: Promise<T>): Promise<T> {
+	let timer: ReturnType<typeof setTimeout> | undefined;
+	const deadline = new Promise<never>((_resolve, reject) => {
+		timer = setTimeout(() => {
+			reject(new ToolError('FETCH', 'timeout'));
+		}, sourceTimeoutMs);
+	});
+
+	try {
+		return(await Promise.race([work, deadline]));
+	} finally {
+		clearTimeout(timer);
+	}
+}
+
 async function fetchSource(url: string, context: FetchContext): Promise<{ entries: EntryMap; warnings: string[] }> {
 	let document: JSONValue;
 	try {
-		const metadata = new Resolver.Metadata(url, {
-			client: context.client,
-			resolver: context.resolver,
-			trustedCAs: [],
-			cache: { instance: context.cache },
-			allowInsecureProtocols: context.allowInsecureProtocols
-		});
-		document = await resolveStrict(await metadata.value('object'));
+		document = await withDeadline(readDocument(url, context));
 	} catch (error) {
 		if (ToolError.isInstance(error)) {
 			throw(new ToolError('FETCH', `${url}: ${error.message}`));
@@ -129,4 +172,4 @@ async function fetchSource(url: string, context: FetchContext): Promise<{ entrie
 }
 
 export { createFetchContext, fetchSource, resolveStrict };
-export type { FetchContext };
+export type { FetchContext, ReadCounter };

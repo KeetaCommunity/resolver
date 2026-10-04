@@ -10,8 +10,8 @@ const publicBaseURL = 'https://resolver.xescu.re';
 // Browser wallets read the document cross-origin, so they need this exact header.
 const probeOrigin = 'https://example.org';
 
-// The two Resolver methods that compareRoot uses.
-type RootReader = Pick<Resolver, 'getRootMetadata' | 'listTokens'>;
+// The parts of the Resolver that compareRoot uses.
+type RootReader = Pick<Resolver, 'getRootMetadata' | 'listTokens' | 'stats'>;
 
 function describeError(error: unknown): string {
 	if (error instanceof Error) {
@@ -51,7 +51,7 @@ function countCurrencyEntries(document: JSONValue): number {
 async function compareRoot(resolver: RootReader, expectedOutput: string): Promise<string[]> {
 	let resolved: JSONValue;
 	try {
-		resolved = await resolveStrict(await resolver.getRootMetadata());
+		resolved = await resolveStrict(await resolver.getRootMetadata(), resolver);
 	} catch (error) {
 		return([`root metadata unresolved: ${describeError(error)}`]);
 	}
