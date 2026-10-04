@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: MPL-2.0
+import * as KeetaNet from '@keetanetwork/keetanet-client';
 import { decodeEntryKey } from './entries.ts';
 import type { EntryKey } from './entries.ts';
 import { ToolError } from './errors.ts';
@@ -81,17 +82,36 @@ function decodeURLField(path: string, value: JSONValue | undefined): string {
 		throw(invalid(path, `invalid url ${value}`));
 	}
 
+	if (url.protocol !== 'https:' && url.protocol !== 'keetanet:') {
+		throw(invalid(path, `unsupported protocol ${url.protocol}`));
+	}
+	if (url.username !== '' || url.password !== '') {
+		throw(invalid(path, 'credentials not allowed'));
+	}
+	if (url.hash !== '') {
+		throw(invalid(path, 'fragment not allowed'));
+	}
 	if (url.protocol === 'https:') {
 		return(value);
 	}
-	if (url.protocol === 'keetanet:') {
-		if (url.hostname === '' || url.pathname !== '/metadata') {
-			throw(invalid(path, 'keetanet url must be keetanet://<account>/metadata'));
-		}
-		return(value);
+
+	if (url.port !== '') {
+		throw(invalid(path, 'port not allowed for keetanet'));
+	}
+	if (url.search !== '') {
+		throw(invalid(path, 'query not allowed for keetanet'));
+	}
+	if (url.pathname !== '/metadata') {
+		throw(invalid(path, 'keetanet url must be keetanet://<account>/metadata'));
+	}
+	// The parser keeps the host's case, so an uppercase account fails here too.
+	try {
+		KeetaNet.lib.Account.fromPublicKeyString(url.hostname);
+	} catch {
+		throw(invalid(path, 'invalid account'));
 	}
 
-	throw(invalid(path, `unsupported protocol ${url.protocol}`));
+	return(value);
 }
 
 function decodeRename(path: string, value: JSONValue): Map<string, string> {

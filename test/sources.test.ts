@@ -4,6 +4,8 @@ import * as assert from 'node:assert/strict';
 import { decodeSources } from '../src/sources.ts';
 import { ToolError } from '../src/errors.ts';
 
+const murphy = 'keeta_athqkb6yw6h2e436xxaakuy4bctrqkqfctvy5xsp3ugvb3avv56zruxjcxauq';
+
 const valid = `{
 	"version": 1,
 	"sources": [
@@ -50,6 +52,15 @@ test('rejects invalid sources', () => {
 		{ name: 'bad sourceID', text: withSource({ sourceID: 'Bad_ID' }) },
 		{ name: 'http url', text: withSource({ url: 'http://x' }) },
 		{ name: 'keetanet url with other path', text: withSource({ url: 'keetanet://keeta_x/other' }) },
+		{ name: 'https credentials', text: withSource({ url: 'https://user:pass@a.example/m.json' }) },
+		{ name: 'https username', text: withSource({ url: 'https://user@a.example/m.json' }) },
+		{ name: 'https fragment', text: withSource({ url: 'https://a.example/m.json#x' }) },
+		{ name: 'keetanet credentials', text: withSource({ url: `keetanet://user:pass@${murphy}/metadata` }) },
+		{ name: 'keetanet fragment', text: withSource({ url: `keetanet://${murphy}/metadata#x` }) },
+		{ name: 'keetanet port', text: withSource({ url: `keetanet://${murphy}:80/metadata` }) },
+		{ name: 'keetanet query', text: withSource({ url: `keetanet://${murphy}/metadata?x=1` }) },
+		{ name: 'keetanet invalid account', text: withSource({ url: 'keetanet://keeta_x/metadata' }) },
+		{ name: 'keetanet uppercase account', text: withSource({ url: `keetanet://${murphy.toUpperCase()}/metadata` }) },
 		{ name: 'include with exclude', text: withSource({ include: ['$A'], exclude: ['$B'] }) },
 		{ name: 'bad include key', text: withSource({ include: ['nope/x'] }) },
 		{ name: 'rename across service types', text: withSource({ rename: { 'fx/a': 'kyc/a' } }) },
@@ -69,4 +80,23 @@ test('error messages name the field path', () => {
 		{ sourceID: 'a', url: 'https://a.example/m.json' },
 		{ sourceID: 'b', url: 'http://x' }
 	])), { message: 'sources[1].url: unsupported protocol http:' });
+});
+
+test('https urls may carry a query and a port', () => {
+	const sources = decodeSources(withSource({ url: 'https://a.example:8443/m.json?x=1' }));
+	assert.equal(sources[0]?.url, 'https://a.example:8443/m.json?x=1');
+});
+
+test('url errors name the rejected part', () => {
+	const cases: { url: string; message: string }[] = [
+		{ url: 'https://user:pass@a.example/m.json', message: 'sources[0].url: credentials not allowed' },
+		{ url: 'https://a.example/m.json#x', message: 'sources[0].url: fragment not allowed' },
+		{ url: `keetanet://${murphy}:80/metadata`, message: 'sources[0].url: port not allowed for keetanet' },
+		{ url: `keetanet://${murphy}/metadata?x=1`, message: 'sources[0].url: query not allowed for keetanet' },
+		{ url: 'keetanet://keeta_x/metadata', message: 'sources[0].url: invalid account' }
+	];
+
+	for (const { url, message } of cases) {
+		assert.throws(() => decodeSources(withSource({ url })), { message }, url);
+	}
 });
