@@ -2,6 +2,7 @@
 import type { ServiceMetadata } from '@keetanetwork/anchor/lib/resolver.js';
 import type { AssertNever } from '@keetanetwork/anchor/lib/utils/never.js';
 import { ToolError } from './errors.ts';
+import type { JSONValue } from './json.ts';
 
 const knownServiceTypes = ['assetMovement', 'banking', 'cards', 'fx', 'kyc', 'notification', 'storage', 'username'] as const;
 type ServiceType = typeof knownServiceTypes[number];
@@ -74,5 +75,105 @@ function decodeEntryKey(text: string): EntryKey {
 	return({ kind: 'service', serviceType, serviceID });
 }
 
-export { knownServiceTypes, encodeEntryKey, decodeEntryKey };
-export type { ServiceType, EntryKey, _ServiceTypesMatch };
+type JSONObject = { [key: string]: JSONValue };
+
+// The key is the encoded entry key.
+type EntryMap = Map<string, JSONValue>;
+
+type ResolverDocument = {
+	version: 1;
+	currencyMap: JSONObject;
+	services: { [type: string]: JSONObject };
+};
+
+function isObject(value: JSONValue | undefined): value is JSONObject {
+	return(typeof value === 'object' && value !== null && !Array.isArray(value));
+}
+
+function isServiceType(text: string): text is ServiceType {
+	return(knownServiceTypes.some((serviceType) => {
+		return(serviceType === text);
+	}));
+}
+
+// Defined instead of assigned, so a key of `__proto__` stays an own property.
+function setMember<T>(target: { [key: string]: T }, key: string, value: T): void {
+	Object.defineProperty(target, key, { value, enumerable: true, writable: true, configurable: true });
+}
+
+/*
+ * Reads a resolver document into one entry per currency code and per service.
+ * Whatever the tool does not manage is dropped with a warning.
+ */
+function flatten(document: JSONValue): { entries: EntryMap; warnings: string[] } {
+	if (!isObject(document)) {
+		throw(new ToolError('INVALID_DOCUMENT', 'document is not an object'));
+	}
+	if (document.version !== 1) {
+		throw(new ToolError('INVALID_DOCUMENT', 'version is not 1'));
+	}
+
+	const currencyMap = document.currencyMap ?? {};
+	if (!isObject(currencyMap)) {
+		throw(new ToolError('INVALID_DOCUMENT', 'currencyMap is not an object'));
+	}
+	const services = document.services ?? {};
+	if (!isObject(services)) {
+		throw(new ToolError('INVALID_DOCUMENT', 'services is not an object'));
+	}
+
+	const entries: EntryMap = new Map();
+	const warnings: string[] = [];
+
+	for (const key of Object.keys(document)) {
+		if (key !== 'version' && key !== 'currencyMap' && key !== 'services') {
+			warnings.push(`dropped key: ${key}`);
+		}
+	}
+
+	for (const [currencyCode, value] of Object.entries(currencyMap)) {
+		if (currencyCode.includes('/')) {
+			warnings.push(`dropped currency code: ${currencyCode}`);
+			continue;
+		}
+		entries.set(encodeEntryKey({ kind: 'currency', currencyCode }), value);
+	}
+
+	for (const [type, byID] of Object.entries(services)) {
+		if (!isObject(byID)) {
+			throw(new ToolError('INVALID_DOCUMENT', `services.${type} is not an object`));
+		}
+		if (!isServiceType(type)) {
+			warnings.push(`dropped service type: ${type}`);
+			continue;
+		}
+		for (const [serviceID, value] of Object.entries(byID)) {
+			entries.set(encodeEntryKey({ kind: 'service', serviceType: type, serviceID }), value);
+		}
+	}
+
+	return({ entries, warnings });
+}
+
+function unflatten(entries: EntryMap): ResolverDocument {
+	const document: ResolverDocument = { version: 1, currencyMap: {}, services: {} };
+
+	for (const [text, value] of entries) {
+		const key = decodeEntryKey(text);
+		if (key.kind === 'currency') {
+			setMember(document.currencyMap, key.currencyCode, value);
+			continue;
+		}
+		let byID = document.services[key.serviceType];
+		if (byID === undefined) {
+			byID = {};
+			document.services[key.serviceType] = byID;
+		}
+		setMember(byID, key.serviceID, value);
+	}
+
+	return(document);
+}
+
+export { knownServiceTypes, encodeEntryKey, decodeEntryKey, flatten, unflatten };
+export type { ServiceType, EntryKey, EntryMap, ResolverDocument, _ServiceTypesMatch };
