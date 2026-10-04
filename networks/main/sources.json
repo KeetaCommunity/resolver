@@ -3,7 +3,8 @@
   "sources": [
     {
       "sourceID": "murphy",
-      "url": "keetanet://keeta_athqkb6yw6h2e436xxaakuy4bctrqkqfctvy5xsp3ugvb3avv56zruxjcxauq/metadata"
+      "url": "keetanet://keeta_athqkb6yw6h2e436xxaakuy4bctrqkqfctvy5xsp3ugvb3avv56zruxjcxauq/metadata",
+      "exclude": ["fx/murphy-alpaca"]
     },
     {
       "sourceID": "changenow",
