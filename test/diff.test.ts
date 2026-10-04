@@ -79,3 +79,26 @@ test('a changed value is reported for a source that stopped publishing it', () =
 	const report = formatReport({ before, after, fetchFailures: new Map(), warnings: [], buildError: undefined });
 	assert.equal(report, '## alpaca\n~ fx/a\n## velocity\n~ fx/a\n## build\nok\n');
 });
+
+test('a failed committed build is diffed as empty and reported', () => {
+	const after = makeMerged([['fx/a', 'v', ['velocity']], ['$B', 'w', ['alpaca']]]);
+	const report = formatReport({
+		before: undefined,
+		after,
+		fetchFailures: new Map(),
+		warnings: ['some warning'],
+		buildError: undefined,
+		committedBuildError: 'SNAPSHOT_MISSING: pfp'
+	});
+	assert.equal(report, [
+		'## alpaca',
+		'+ $B',
+		'## velocity',
+		'+ fx/a',
+		'## build',
+		'ok',
+		'? committed build failed: SNAPSHOT_MISSING: pfp',
+		'? some warning',
+		''
+	].join('\n'));
+});

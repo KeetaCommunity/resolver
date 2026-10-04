@@ -3,13 +3,16 @@ import type { Merged } from './merge.ts';
 import { sameJSON } from './json.ts';
 
 type ReportInput = {
-	// Undefined when that build failed; no entry lines are then possible.
+	// Undefined when that build failed. A failed committed build counts as an
+	// empty one, so the reviewer sees everything that would be published.
 	before: Merged | undefined;
+	// Undefined when the fresh build failed; no entry lines are possible then.
 	after: Merged | undefined;
 	// Source ID to the message of the failed fetch.
 	fetchFailures: Map<string, string>;
 	warnings: string[];
 	buildError: string | undefined;
+	committedBuildError?: string | undefined;
 };
 
 const markers = ['+', '~', '-', '!'];
@@ -46,8 +49,9 @@ function addLine(sections: Map<string, Map<string, string[]>>, sourceID: string,
 function formatReport(input: ReportInput): string {
 	const sections = new Map<string, Map<string, string[]>>();
 
-	const { before, after } = input;
-	if (before !== undefined && after !== undefined) {
+	const before = input.before ?? { entries: new Map(), provenance: new Map() };
+	const { after } = input;
+	if (after !== undefined) {
 		const keys = new Set([...before.entries.keys(), ...after.entries.keys()]);
 		for (const key of keys) {
 			const oldValue = before.entries.get(key);
@@ -93,6 +97,9 @@ function formatReport(input: ReportInput): string {
 		lines.push('ok');
 	} else {
 		lines.push(`! ${input.buildError}`);
+	}
+	if (input.committedBuildError !== undefined) {
+		lines.push(`? committed build failed: ${input.committedBuildError}`);
 	}
 	for (const warning of input.warnings) {
 		lines.push(`? ${warning}`);

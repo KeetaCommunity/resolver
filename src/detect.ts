@@ -91,7 +91,8 @@ async function detect(input: NetworkInput, fetchEntries: FetchEntries): Promise<
 		after: after.result?.merged,
 		fetchFailures,
 		warnings: unique([...buildWarnings, ...fetchWarnings]),
-		buildError: after.error
+		buildError: after.error,
+		committedBuildError: before.error
 	});
 
 	return({ changed: comparisonKey(before) !== comparisonKey(after), snapshots: fetched, body });

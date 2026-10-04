@@ -133,8 +133,14 @@ test('a missing committed snapshot with a working fetch gives changed true', asy
 	});
 	assert.equal(result.changed, true);
 	assert.equal(result.snapshots.length, sourceNames.length);
-	// The committed build fails, so there is nothing to compare entry by entry.
-	assert.equal(result.body, '## build\nok\n');
+	// The committed build counts as empty, so everything published is added.
+	const lines = result.body.split('\n');
+	assert.ok(lines.includes('## pfp'));
+	for (const key of full.snapshots.get('pfp')?.entries.keys() ?? []) {
+		assert.ok(lines.includes(`+ ${key}`));
+	}
+	assert.ok(lines.includes('? committed build failed: SNAPSHOT_MISSING: pfp'));
+	assert.ok(lines.indexOf('ok') < lines.indexOf('? committed build failed: SNAPSHOT_MISSING: pfp'));
 });
 
 test('a fresh build error is reported and counts as a change', async () => {
