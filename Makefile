@@ -3,7 +3,8 @@ DIST := $(NETWORKS:%=dist/%/metadata.json)
 
 .SECONDEXPANSION:
 dist: $(DIST)
-dist/%/metadata.json: networks/%/sources.json $$(wildcard networks/$$*/snapshots/*.json) $(wildcard src/*.ts) bin/build.ts package-lock.json
+# The directories are prerequisites so that deleting a file also triggers a rebuild.
+dist/%/metadata.json: networks/%/sources.json $$(wildcard networks/$$*/snapshots/*.json) $(wildcard src/*.ts) bin/build.ts package-lock.json networks/$$*/snapshots src
 	@mkdir -p $(@D)
 	node bin/build.ts $* $@
 
