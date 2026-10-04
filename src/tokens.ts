@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 import * as KeetaNet from '@keetanetwork/keetanet-client';
+import { isCurrencySearchCanonical } from '@keetanetwork/anchor/lib/resolver.generated.js';
 import { decodeEntryKey } from './entries.ts';
 import type { EntryMap } from './entries.ts';
 import { ToolError } from './errors.ts';
@@ -33,17 +34,32 @@ function describe(value: JSONValue): string {
 	return(JSON.stringify(value));
 }
 
-// `fromPublicKeyString` throws for anything that is not an account.
+/*
+ * `fromPublicKeyString` throws for anything that is not an account. It also
+ * accepts prefixes other than `keeta_`, which the SDK then compares as a
+ * different string, so only the `keeta_` form is a token address here.
+ */
 function isTokenAddress(value: unknown): boolean {
 	if (typeof value !== 'string') {
 		return(false);
 	}
 
 	try {
-		return(KeetaNet.lib.Account.fromPublicKeyString(value).isToken());
+		const account = KeetaNet.lib.Account.fromPublicKeyString(value);
+		const canonical = KeetaNet.lib.Account.fromPublicKeyAndType(account.publicKeyAndType).publicKeyString.get();
+		return(canonical === value && account.isToken());
 	} catch {
 		return(false);
 	}
+}
+
+/*
+ * The SDK skips any other code when it lists or looks up tokens, so such an
+ * entry would be dead data. Whitespace and control characters would also
+ * break the one-line report.
+ */
+function isCanonicalCurrencyCode(code: string): boolean {
+	return(isCurrencySearchCanonical(code) && !/[\s\p{Cc}]/u.test(code));
 }
 
 function compare(a: string, b: string): number {
@@ -106,7 +122,13 @@ function listedTokens(entries: EntryMap): Set<string> {
  */
 function checkSourceTokens(sourceID: string, kept: EntryMap, listed: Set<string>): void {
 	for (const [text, value] of kept) {
-		if (decodeEntryKey(text).kind === 'currency' && !isTokenAddress(value)) {
+		if (decodeEntryKey(text).kind !== 'currency') {
+			continue;
+		}
+		if (!isCanonicalCurrencyCode(text)) {
+			throw(new ToolError('INVALID_TOKEN', `${sourceID} ${text}: not a canonical currency code`));
+		}
+		if (!isTokenAddress(value)) {
 			throw(new ToolError('INVALID_TOKEN', `${sourceID} ${text}: not a token address: ${describe(value)}`));
 		}
 	}
@@ -198,4 +220,4 @@ function pruneFX(entries: EntryMap): { entries: EntryMap; warnings: string[] } {
 	return({ entries: result, warnings });
 }
 
-export { isTokenAddress, listedTokens, checkSourceTokens, pruneFX };
+export { isTokenAddress, isCanonicalCurrencyCode, listedTokens, checkSourceTokens, pruneFX };

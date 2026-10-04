@@ -119,7 +119,12 @@ test('rejects invalid add', () => {
 		{ name: 'service key', add: { 'fx/a': kta }, message: 'sources[0].add.fx/a: only currency entries can be added' },
 		{ name: 'non-token account', add: { $A: murphy }, message: 'sources[0].add.$A: not a token address' },
 		{ name: 'ticker', add: { $A: '$KTA' }, message: 'sources[0].add.$A: not a token address' },
-		{ name: 'not a string', add: { $A: 5 }, message: 'sources[0].add.$A: not a token address' }
+		{ name: 'not a string', add: { $A: 5 }, message: 'sources[0].add.$A: not a token address' },
+		{ name: 'non-canonical code', add: { USDC: kta }, message: 'sources[0].add.USDC: not a canonical currency code' },
+		{ name: 'lowercase code', add: { kta: kta }, message: 'sources[0].add.kta: not a canonical currency code' },
+		{ name: 'prototype key', add: { ['__proto__']: kta }, message: 'sources[0].add.__proto__: not a canonical currency code' },
+		{ name: 'newline in code', add: { '$X\nY': kta }, message: 'sources[0].add.$X\nY: not a canonical currency code' },
+		{ name: 'non-keeta encoding', add: { $A: `tyblocks_${kta.slice('keeta_'.length)}` }, message: 'sources[0].add.$A: not a token address' }
 	];
 
 	for (const { name, add, message } of cases) {

@@ -4,7 +4,7 @@ import { decodeEntryKey } from './entries.ts';
 import type { EntryKey } from './entries.ts';
 import { ToolError } from './errors.ts';
 import type { JSONValue } from './json.ts';
-import { isTokenAddress } from './tokens.ts';
+import { isCanonicalCurrencyCode, isTokenAddress } from './tokens.ts';
 
 type JSONObject = { [key: string]: JSONValue };
 
@@ -148,6 +148,9 @@ function decodeAdd(path: string, value: JSONValue): Map<string, string> {
 		const key = decodeKey(`${path}.${code}`, code);
 		if (key.kind !== 'currency') {
 			throw(invalid(`${path}.${code}`, 'only currency entries can be added'));
+		}
+		if (!isCanonicalCurrencyCode(code)) {
+			throw(invalid(`${path}.${code}`, 'not a canonical currency code'));
 		}
 		if (typeof address !== 'string' || !isTokenAddress(address)) {
 			throw(invalid(`${path}.${code}`, 'not a token address'));
