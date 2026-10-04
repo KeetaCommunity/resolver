@@ -7,7 +7,7 @@ import type { EntryMap } from '../src/entries.ts';
 import { ToolError } from '../src/errors.ts';
 
 function makeSource(selection: Selection, rename: [string, string][] = []): Source {
-	return({ sourceID: 'src', url: 'https://example.invalid/r.json', selection, rename: new Map(rename) });
+	return({ sourceID: 'src', url: 'https://example.invalid/r.json', selection, rename: new Map(rename), add: new Map() });
 }
 
 function makeEntries(): EntryMap {

@@ -24,7 +24,8 @@
     {
       "sourceID": "velocity",
       "url": "keetanet://keeta_aab2lqgwz56u6dvfbqtsadcnfc2y4wdvl7rd2pkboxoray5mj3hmdzot2neu4wq/metadata",
-      "exclude": ["fx/test-anchor", "$TEST"]
+      "exclude": ["fx/test-anchor", "$TEST"],
+      "add": { "$KTA": "keeta_anqdilpazdekdu4acw65fj7smltcp26wbrildkqtszqvverljpwpezmd44ssg" }
     }
   ]
 }

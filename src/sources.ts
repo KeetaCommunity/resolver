@@ -4,6 +4,7 @@ import { decodeEntryKey } from './entries.ts';
 import type { EntryKey } from './entries.ts';
 import { ToolError } from './errors.ts';
 import type { JSONValue } from './json.ts';
+import { isTokenAddress } from './tokens.ts';
 
 type JSONObject = { [key: string]: JSONValue };
 
@@ -23,9 +24,11 @@ type Source = {
 	selection: Selection;
 	// Source entry key to the key it is published under.
 	rename: Map<string, string>;
+	// Currency code to token address, added to the snapshot before the rules.
+	add: Map<string, string>;
 };
 
-const sourceFields = ['sourceID', 'url', 'include', 'exclude', 'rename'];
+const sourceFields = ['sourceID', 'url', 'include', 'exclude', 'rename', 'add'];
 
 function invalid(path: string, reason: string): ToolError {
 	return(new ToolError('INVALID_SOURCES', `${path}: ${reason}`));
@@ -135,6 +138,26 @@ function decodeRename(path: string, value: JSONValue): Map<string, string> {
 	return(rename);
 }
 
+function decodeAdd(path: string, value: JSONValue): Map<string, string> {
+	if (!isObject(value)) {
+		throw(invalid(path, 'not an object'));
+	}
+
+	const add = new Map<string, string>();
+	for (const [code, address] of Object.entries(value)) {
+		const key = decodeKey(`${path}.${code}`, code);
+		if (key.kind !== 'currency') {
+			throw(invalid(`${path}.${code}`, 'only currency entries can be added'));
+		}
+		if (typeof address !== 'string' || !isTokenAddress(address)) {
+			throw(invalid(`${path}.${code}`, 'not a token address'));
+		}
+		add.set(code, address);
+	}
+
+	return(add);
+}
+
 function decodeSource(path: string, value: JSONValue, seen: Set<string>): Source {
 	if (!isObject(value)) {
 		throw(invalid(path, 'not an object'));
@@ -172,7 +195,12 @@ function decodeSource(path: string, value: JSONValue, seen: Set<string>): Source
 		rename = decodeRename(`${path}.rename`, value.rename);
 	}
 
-	return({ sourceID, url, selection, rename });
+	let add = new Map<string, string>();
+	if (value.add !== undefined) {
+		add = decodeAdd(`${path}.add`, value.add);
+	}
+
+	return({ sourceID, url, selection, rename, add });
 }
 
 function decodeSources(text: string): Source[] {

@@ -21,10 +21,13 @@ function fixture(name: string): JSONValue {
 
 function makeSource(sourceID: string): Source {
 	let selection: Source['selection'] = { kind: 'all' };
+	const add = new Map<string, string>();
 	if (sourceID === 'velocity') {
 		selection = { kind: 'exclude', keys: ['fx/test-anchor', '$TEST'] };
+		// Mirrors networks/main/sources.json: its fx entries trade against KTA.
+		add.set('$KTA', 'keeta_anqdilpazdekdu4acw65fj7smltcp26wbrildkqtszqvverljpwpezmd44ssg');
 	}
-	return({ sourceID, url: `https://${sourceID}.example.invalid/metadata.json`, selection, rename: new Map() });
+	return({ sourceID, url: `https://${sourceID}.example.invalid/metadata.json`, selection, rename: new Map(), add });
 }
 
 function makeInput(): NetworkInput {

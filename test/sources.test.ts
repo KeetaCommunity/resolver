@@ -100,3 +100,29 @@ test('url errors name the rejected part', () => {
 		assert.throws(() => decodeSources(withSource({ url })), { message }, url);
 	}
 });
+
+const kta = 'keeta_anqdilpazdekdu4acw65fj7smltcp26wbrildkqtszqvverljpwpezmd44ssg';
+
+test('add decodes to a map and defaults to empty', () => {
+	const [withAdd, without] = decodeSources(withSources([
+		{ sourceID: 'a', url: 'https://a.example/m.json', add: { $KTA: kta } },
+		{ sourceID: 'b', url: 'https://b.example/m.json' }
+	]));
+	assert.deepEqual([...(withAdd?.add ?? [])], [['$KTA', kta]]);
+	assert.equal(without?.add.size, 0);
+});
+
+test('rejects invalid add', () => {
+	const cases: { name: string; add: unknown; message: string }[] = [
+		{ name: 'not an object', add: [kta], message: 'sources[0].add: not an object' },
+		{ name: 'null', add: null, message: 'sources[0].add: not an object' },
+		{ name: 'service key', add: { 'fx/a': kta }, message: 'sources[0].add.fx/a: only currency entries can be added' },
+		{ name: 'non-token account', add: { $A: murphy }, message: 'sources[0].add.$A: not a token address' },
+		{ name: 'ticker', add: { $A: '$KTA' }, message: 'sources[0].add.$A: not a token address' },
+		{ name: 'not a string', add: { $A: 5 }, message: 'sources[0].add.$A: not a token address' }
+	];
+
+	for (const { name, add, message } of cases) {
+		assert.throws(() => decodeSources(withSource({ add })), { name: 'ToolError', code: 'INVALID_SOURCES', message }, name);
+	}
+});

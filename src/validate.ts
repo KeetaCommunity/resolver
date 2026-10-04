@@ -6,7 +6,8 @@ import { verifyMetadataSignature } from '@keetanetwork/anchor/lib/anchor-metadat
 import type { SignableServiceMetadata } from '@keetanetwork/anchor/lib/anchor-metadata-server.js';
 import { assertHTTPSignedField } from '@keetanetwork/anchor/lib/http-server/common.js';
 import { ToolError } from './errors.ts';
-import type { ResolverDocument } from './entries.ts';
+import { decodeEntryKey } from './entries.ts';
+import type { EntryMap, ResolverDocument } from './entries.ts';
 import type { JSONValue } from './json.ts';
 
 function describeError(error: unknown): string {
@@ -45,6 +46,28 @@ async function entrySignatureIsValid(entry: { [key: string]: JSONValue }): Promi
 }
 
 /*
+ * An entry carries both `account` and `signed` or neither. `prefix` is put in
+ * front of the message so a caller can name the source.
+ */
+async function checkEntrySignature(prefix: string, type: string, serviceID: string, entry: JSONValue): Promise<void> {
+	if (typeof entry !== 'object' || entry === null || Array.isArray(entry)) {
+		return;
+	}
+
+	const hasAccount = entry['account'] !== undefined;
+	const hasSigned = entry['signed'] !== undefined;
+	if (!hasAccount && !hasSigned) {
+		return;
+	}
+	if (hasAccount !== hasSigned) {
+		throw(new ToolError('VALIDATION', `${prefix}unsigned field: ${type}/${serviceID}`));
+	}
+	if (!await entrySignatureIsValid(entry)) {
+		throw(new ToolError('VALIDATION', `${prefix}bad signature: ${type}/${serviceID}`));
+	}
+}
+
+/*
  * Signatures never expire (the SDK verifies them with `maxSkewMs: Infinity`),
  * so an entry copied verbatim from its source stays valid.
  */
@@ -57,23 +80,22 @@ async function validateDocument(document: ResolverDocument): Promise<void> {
 
 	for (const [type, byID] of Object.entries(document.services)) {
 		for (const [serviceID, entry] of Object.entries(byID)) {
-			if (typeof entry !== 'object' || entry === null || Array.isArray(entry)) {
-				continue;
-			}
-
-			const hasAccount = entry['account'] !== undefined;
-			const hasSigned = entry['signed'] !== undefined;
-			if (!hasAccount && !hasSigned) {
-				continue;
-			}
-			if (hasAccount !== hasSigned) {
-				throw(new ToolError('VALIDATION', `unsigned field: ${type}/${serviceID}`));
-			}
-			if (!await entrySignatureIsValid(entry)) {
-				throw(new ToolError('VALIDATION', `bad signature: ${type}/${serviceID}`));
-			}
+			await checkEntrySignature('', type, serviceID, entry);
 		}
 	}
 }
 
-export { validateDocument };
+/*
+ * The same check for one source's entries, before any change of ours, so a
+ * source that publishes a bad signature is named.
+ */
+async function checkEntrySignatures(sourceID: string, entries: EntryMap): Promise<void> {
+	for (const [text, entry] of entries) {
+		const key = decodeEntryKey(text);
+		if (key.kind === 'service') {
+			await checkEntrySignature(`${sourceID} `, key.serviceType, key.serviceID, entry);
+		}
+	}
+}
+
+export { validateDocument, checkEntrySignatures };

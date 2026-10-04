@@ -2,7 +2,7 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { unflatten } from './entries.ts';
-import type { ResolverDocument } from './entries.ts';
+import type { EntryMap, ResolverDocument } from './entries.ts';
 import { ToolError } from './errors.ts';
 import { canonicalJSON } from './json.ts';
 import { mergeContributions } from './merge.ts';
@@ -12,7 +12,8 @@ import { decodeSnapshot } from './snapshot.ts';
 import type { Snapshot } from './snapshot.ts';
 import { decodeSources } from './sources.ts';
 import type { Source } from './sources.ts';
-import { validateDocument } from './validate.ts';
+import { checkSourceTokens, listedTokens, pruneFX } from './tokens.ts';
+import { checkEntrySignatures, validateDocument } from './validate.ts';
 
 type NetworkInput = {
 	sources: Source[];
@@ -87,12 +88,35 @@ async function buildNetwork(input: NetworkInput): Promise<BuildResult> {
 		if (snapshot === undefined) {
 			throw(new ToolError('SNAPSHOT_MISSING', source.sourceID));
 		}
-		const ruled = applyRules(source, snapshot.entries);
+		// What the source lists: its snapshot plus `add`, before `exclude`.
+		const listing: EntryMap = new Map(snapshot.entries);
+		for (const [code, address] of source.add) {
+			if (listing.has(code)) {
+				throw(new ToolError('ADD_COLLISION', `${source.sourceID} add ${code}: already in source`));
+			}
+			listing.set(code, address);
+		}
+		const listed = listedTokens(listing);
+
+		const ruled = applyRules(source, listing);
 		warnings.push(...ruled.warnings);
+		checkSourceTokens(source.sourceID, ruled.entries, listed);
+		// Against the upstream content, before pruneFX changes anything.
+		await checkEntrySignatures(source.sourceID, ruled.entries);
 		contributions.push({ sourceID: source.sourceID, entries: ruled.entries });
 	}
 
-	const merged = mergeContributions(contributions);
+	const unpruned = mergeContributions(contributions);
+	const pruned = pruneFX(unpruned.entries);
+	warnings.push(...pruned.warnings);
+	// Provenance follows the entries, so the diff does not report a removed entry as added.
+	const provenance = new Map<string, string[]>();
+	for (const [key, sourceIDs] of unpruned.provenance) {
+		if (pruned.entries.has(key)) {
+			provenance.set(key, sourceIDs);
+		}
+	}
+	const merged: Merged = { entries: pruned.entries, provenance };
 	const document = unflatten(merged.entries);
 	await validateDocument(document);
 

@@ -5,7 +5,7 @@ import * as fs from 'node:fs';
 import { flatten, unflatten } from '../src/entries.ts';
 import type { ResolverDocument } from '../src/entries.ts';
 import { mergeContributions } from '../src/merge.ts';
-import { validateDocument } from '../src/validate.ts';
+import { checkEntrySignatures, validateDocument } from '../src/validate.ts';
 import { ToolError } from '../src/errors.ts';
 import type { JSONValue } from '../src/json.ts';
 
@@ -88,4 +88,23 @@ test('all six fixtures merged together validate', async () => {
 	}));
 
 	await validateDocument(unflatten(merged.entries));
+});
+
+test('checkEntrySignatures accepts the real signed entry', async () => {
+	await checkEntrySignatures('changenow', flatten(fixture('changenow')).entries);
+});
+
+test('checkEntrySignatures names the source in its messages', async () => {
+	const entries = flatten(fixture('changenow')).entries;
+	const entry = entries.get('assetMovement/changenow-staging');
+	if (typeof entry !== 'object' || entry === null || Array.isArray(entry)) {
+		throw(new Error('changenow-staging entry missing from fixture'));
+	}
+
+	entries.set('assetMovement/changenow-staging', { ...entry, operations: { tampered: 'https://evil.example/x' } });
+	await assert.rejects(checkEntrySignatures('changenow', entries), validationError('changenow bad signature: assetMovement/changenow-staging'));
+
+	const { signed: _signed, ...unsigned } = entry;
+	entries.set('assetMovement/changenow-staging', unsigned);
+	await assert.rejects(checkEntrySignatures('changenow', entries), validationError('changenow unsigned field: assetMovement/changenow-staging'));
 });
