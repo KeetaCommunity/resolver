@@ -9,6 +9,8 @@ import type { Source } from './sources.ts';
 
 type DetectResult = {
 	changed: boolean;
+	// A failed fetch means the fresh snapshots are incomplete, so no PR should be made from them.
+	fetchFailed: boolean;
 	// The fresh snapshots of the sources that were fetched successfully.
 	snapshots: Snapshot[];
 	body: string;
@@ -95,7 +97,7 @@ async function detect(input: NetworkInput, fetchEntries: FetchEntries): Promise<
 		committedBuildError: before.error
 	});
 
-	return({ changed: comparisonKey(before) !== comparisonKey(after), snapshots: fetched, body });
+	return({ changed: comparisonKey(before) !== comparisonKey(after), fetchFailed: fetchFailures.size > 0, snapshots: fetched, body });
 }
 
 export { detect };

@@ -61,6 +61,7 @@ test('an unchanged fetch gives changed false', async () => {
 		return(committed(input, source));
 	});
 	assert.equal(result.changed, false);
+	assert.equal(result.fetchFailed, false);
 	assert.equal(result.snapshots.length, sourceNames.length);
 	assert.equal(result.body, '## build\nok\n');
 });
@@ -105,6 +106,7 @@ test('a failed fetch keeps the committed snapshot and is reported', async () => 
 		return(committed(input, source));
 	});
 	assert.equal(result.changed, false);
+	assert.equal(result.fetchFailed, true);
 	assert.equal(result.snapshots.some((snapshot) => {
 		return(snapshot.sourceID === 'pfp');
 	}), false);

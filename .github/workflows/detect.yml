@@ -23,8 +23,14 @@ jobs:
           cache: npm
       - run: npm ci
       # Always writes the body file. The PR action makes no PR when there is no diff.
-      - run: node bin/detect.ts ${{ matrix.network }} pr-body.md
-      - uses: peter-evans/create-pull-request@v7
+      - id: detect
+        run: node bin/detect.ts ${{ matrix.network }} pr-body.md
+      # Fetch failures with an unchanged output appear nowhere else.
+      - if: always()
+        run: if [ -f pr-body.md ]; then cat pr-body.md >> "$GITHUB_STEP_SUMMARY"; fi
+      # On a failed fetch the PR would close or revert that source's proposed snapshot.
+      - if: steps.detect.outputs.fetch_failed == 'false'
+        uses: peter-evans/create-pull-request@v7
         with:
           branch: sources-update-${{ matrix.network }}
           title: "sources: ${{ matrix.network }}"

@@ -16,6 +16,6 @@ check:
 	node --test 'test/**/*.test.ts'
 
 detect:
-	for network in $(NETWORKS); do node bin/detect.ts $$network pr-body-$$network.md; done
+	for network in $(NETWORKS); do node bin/detect.ts $$network pr-body-$$network.md || exit 1; done
 
 .PHONY: dist clean check detect

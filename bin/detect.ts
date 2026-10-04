@@ -31,6 +31,11 @@ async function main(): Promise<void> {
 	});
 
 	fs.writeFileSync(bodyPath, result.body);
+	// The workflow skips the PR step on a failed fetch, so a transient failure does not close the PR.
+	const outputPath = process.env['GITHUB_OUTPUT'];
+	if (outputPath !== undefined && outputPath !== '') {
+		fs.appendFileSync(outputPath, `fetch_failed=${String(result.fetchFailed)}\n`);
+	}
 	if (!result.changed) {
 		process.stdout.write('unchanged\n');
 		return;
