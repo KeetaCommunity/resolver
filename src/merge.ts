@@ -64,7 +64,7 @@ function mergeContributions(contributions: Contribution[]): Merged {
 			}
 
 			if (!sameJSON(existing, value)) {
-				throw(new ToolError('CONFLICT', `conflict: ${key} ${first}=${shortValue(existing)} ${contribution.sourceID}=${shortValue(value)}`));
+				throw(new ToolError('CONFLICT', `${key} ${first}=${shortValue(existing)} ${contribution.sourceID}=${shortValue(value)}`));
 			}
 			if (!sources.includes(contribution.sourceID)) {
 				sources.push(contribution.sourceID);

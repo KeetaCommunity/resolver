@@ -28,7 +28,7 @@ test('different duplicates throw CONFLICT naming both sources', () => {
 			contribution('a', [['USD', { x: 1 }]])
 		]);
 	}, (error) => {
-		return(ToolError.isInstance(error) && error.code === 'CONFLICT' && error.message === 'conflict: USD a={…} b={…}');
+		return(ToolError.isInstance(error) && error.code === 'CONFLICT' && error.message === 'USD a={…} b={…}');
 	});
 });
 
@@ -39,7 +39,7 @@ test('conflict message cuts long string values', () => {
 			contribution('b', [['USD', 'short']])
 		]);
 	}, (error) => {
-		return(ToolError.isInstance(error) && error.message === 'conflict: USD a=abcdefghijkl… b=short');
+		return(ToolError.isInstance(error) && error.message === 'USD a=abcdefghijkl… b=short');
 	});
 });
 

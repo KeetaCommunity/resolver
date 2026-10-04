@@ -96,6 +96,15 @@ function isServiceType(text: string): text is ServiceType {
 	}));
 }
 
+// A key with a line break in it could forge lines of the change report.
+function hasControlCharacters(text: string): boolean {
+	return(/\p{Cc}/u.test(text));
+}
+
+function droppedControlKey(key: string): string {
+	return(`dropped key with control characters: ${JSON.stringify(key)}`);
+}
+
 // Defined instead of assigned, so a key of `__proto__` stays an own property.
 function setMember<T>(target: { [key: string]: T }, key: string, value: T): void {
 	Object.defineProperty(target, key, { value, enumerable: true, writable: true, configurable: true });
@@ -126,12 +135,21 @@ function flatten(document: JSONValue): { entries: EntryMap; warnings: string[] }
 	const warnings: string[] = [];
 
 	for (const key of Object.keys(document)) {
-		if (key !== 'version' && key !== 'currencyMap' && key !== 'services') {
-			warnings.push(`dropped key: ${key}`);
+		if (key === 'version' || key === 'currencyMap' || key === 'services') {
+			continue;
 		}
+		if (hasControlCharacters(key)) {
+			warnings.push(droppedControlKey(key));
+			continue;
+		}
+		warnings.push(`dropped key: ${key}`);
 	}
 
 	for (const [currencyCode, value] of Object.entries(currencyMap)) {
+		if (hasControlCharacters(currencyCode)) {
+			warnings.push(droppedControlKey(currencyCode));
+			continue;
+		}
 		if (currencyCode.includes('/')) {
 			warnings.push(`dropped currency code: ${currencyCode}`);
 			continue;
@@ -139,15 +157,24 @@ function flatten(document: JSONValue): { entries: EntryMap; warnings: string[] }
 		entries.set(encodeEntryKey({ kind: 'currency', currencyCode }), value);
 	}
 
+	// An unknown type is dropped whatever its value, so its shape is not checked.
 	for (const [type, byID] of Object.entries(services)) {
-		if (!isObject(byID)) {
-			throw(new ToolError('INVALID_DOCUMENT', `services.${type} is not an object`));
+		if (hasControlCharacters(type)) {
+			warnings.push(droppedControlKey(type));
+			continue;
 		}
 		if (!isServiceType(type)) {
 			warnings.push(`dropped service type: ${type}`);
 			continue;
 		}
+		if (!isObject(byID)) {
+			throw(new ToolError('INVALID_DOCUMENT', `services.${type} is not an object`));
+		}
 		for (const [serviceID, value] of Object.entries(byID)) {
+			if (hasControlCharacters(serviceID)) {
+				warnings.push(droppedControlKey(`${type}/${serviceID}`));
+				continue;
+			}
 			entries.set(encodeEntryKey({ kind: 'service', serviceType: type, serviceID }), value);
 		}
 	}

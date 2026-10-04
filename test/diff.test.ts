@@ -32,7 +32,8 @@ test('formats added, changed, removed, fetch failure and warning', () => {
 		after,
 		fetchFailures: new Map([['pfp', 'HTTP 503']]),
 		warnings: ['exclude target missing: velocity fx/test-anchor'],
-		buildError: undefined
+		buildError: undefined,
+		committedBuildError: undefined
 	});
 	assert.equal(report, [
 		'## pfp',
@@ -51,13 +52,13 @@ test('formats added, changed, removed, fetch failure and warning', () => {
 test('lists a shared entry under each of its sources', () => {
 	const before = makeMerged([]);
 	const after = makeMerged([['fx/shared', 'v', ['alpaca', 'velocity']]]);
-	const report = formatReport({ before, after, fetchFailures: new Map(), warnings: [], buildError: undefined });
+	const report = formatReport({ before, after, fetchFailures: new Map(), warnings: [], buildError: undefined, committedBuildError: undefined });
 	assert.equal(report, '## alpaca\n+ fx/shared\n## velocity\n+ fx/shared\n## build\nok\n');
 });
 
 test('an unchanged build gives only the build section', () => {
 	const merged = makeMerged([['fx/a', 'v', ['velocity']]]);
-	const report = formatReport({ before: merged, after: merged, fetchFailures: new Map(), warnings: [], buildError: undefined });
+	const report = formatReport({ before: merged, after: merged, fetchFailures: new Map(), warnings: [], buildError: undefined, committedBuildError: undefined });
 	assert.equal(report, '## build\nok\n');
 });
 
@@ -68,15 +69,16 @@ test('a build error replaces ok and skips entry lines', () => {
 		after: undefined,
 		fetchFailures: new Map(),
 		warnings: [],
-		buildError: 'CONFLICT: conflict: fx/a'
+		buildError: 'CONFLICT: fx/a alpaca=1 velocity=2',
+		committedBuildError: undefined
 	});
-	assert.equal(report, '## build\n! CONFLICT: conflict: fx/a\n');
+	assert.equal(report, '## build\n! CONFLICT: fx/a alpaca=1 velocity=2\n');
 });
 
 test('a changed value is reported for a source that stopped publishing it', () => {
 	const before = makeMerged([['fx/a', 1, ['alpaca', 'velocity']]]);
 	const after = makeMerged([['fx/a', 2, ['velocity']]]);
-	const report = formatReport({ before, after, fetchFailures: new Map(), warnings: [], buildError: undefined });
+	const report = formatReport({ before, after, fetchFailures: new Map(), warnings: [], buildError: undefined, committedBuildError: undefined });
 	assert.equal(report, '## alpaca\n~ fx/a\n## velocity\n~ fx/a\n## build\nok\n');
 });
 
@@ -99,6 +101,29 @@ test('a failed committed build is diffed as empty and reported', () => {
 		'ok',
 		'? committed build failed: SNAPSHOT_MISSING: pfp',
 		'? some warning',
+		''
+	].join('\n'));
+});
+
+test('a line break in upstream text cannot start a report line', () => {
+	const after = makeMerged([['fx/a\n## forged', 'v', ['velocity']]]);
+	const report = formatReport({
+		before: undefined,
+		after,
+		fetchFailures: new Map([['pfp', 'HTTP 503\n## build\nok']]),
+		warnings: ['pfp: dropped service type: x\r\n+ fx/forged'],
+		buildError: 'CONFLICT: $A\n\tvelocity=1 alpaca=2',
+		committedBuildError: 'FETCH: a\nb'
+	});
+	assert.equal(report, [
+		'## pfp',
+		'! fetch failed: HTTP 503 ## build ok',
+		'## velocity',
+		'+ fx/a ## forged',
+		'## build',
+		'! CONFLICT: $A velocity=1 alpaca=2',
+		'? committed build failed: FETCH: a b',
+		'? pfp: dropped service type: x + fx/forged',
 		''
 	].join('\n'));
 });

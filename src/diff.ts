@@ -12,7 +12,7 @@ type ReportInput = {
 	fetchFailures: Map<string, string>;
 	warnings: string[];
 	buildError: string | undefined;
-	committedBuildError?: string | undefined;
+	committedBuildError: string | undefined;
 };
 
 const markers = ['+', '~', '-', '!'];
@@ -25,6 +25,11 @@ function compare(a: string, b: string): number {
 		return(1);
 	}
 	return(0);
+}
+
+// Upstream text reaches the report, and a line break in it could forge a line.
+function oneLine(text: string): string {
+	return(text.replace(/\s+/g, ' '));
 }
 
 function addLine(sections: Map<string, Map<string, string[]>>, sourceID: string, marker: string, text: string): void {
@@ -87,7 +92,7 @@ function formatReport(input: ReportInput): string {
 		lines.push(`## ${sourceID}`);
 		for (const marker of markers) {
 			for (const text of (section.get(marker) ?? []).sort(compare)) {
-				lines.push(`${marker} ${text}`);
+				lines.push(`${marker} ${oneLine(text)}`);
 			}
 		}
 	}
@@ -96,13 +101,13 @@ function formatReport(input: ReportInput): string {
 	if (input.buildError === undefined) {
 		lines.push('ok');
 	} else {
-		lines.push(`! ${input.buildError}`);
+		lines.push(`! ${oneLine(input.buildError)}`);
 	}
 	if (input.committedBuildError !== undefined) {
-		lines.push(`? committed build failed: ${input.committedBuildError}`);
+		lines.push(`? committed build failed: ${oneLine(input.committedBuildError)}`);
 	}
 	for (const warning of input.warnings) {
-		lines.push(`? ${warning}`);
+		lines.push(`? ${oneLine(warning)}`);
 	}
 
 	return(lines.join('\n') + '\n');

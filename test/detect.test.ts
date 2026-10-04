@@ -158,7 +158,7 @@ test('a fresh build error is reported and counts as a change', async () => {
 		return(fetched);
 	});
 	assert.equal(result.changed, true);
-	assert.match(result.body, /^## build\n! CONFLICT: conflict: \$VELO /);
+	assert.match(result.body, /^## build\n! CONFLICT: \$VELO alpaca=keeta_\S+ velocity=keeta_\S+\n/);
 });
 
 test('fetch warnings are prefixed with the sourceID and deduplicated', async () => {

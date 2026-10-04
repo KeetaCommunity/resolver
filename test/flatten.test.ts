@@ -33,6 +33,26 @@ test('flatten drops unknown keys, types, and slash currency codes with warnings'
 	assert.deepEqual([...entries.keys()].sort(), ['USD', 'fx/a/b']);
 	assert.deepEqual(warnings.sort(), ['dropped currency code: A/B', 'dropped key: extra', 'dropped service type: future']);
 });
+test('flatten drops an unknown service type whatever its value', () => {
+	const { entries, warnings } = flatten({ version: 1, currencyMap: { USD: 'y' }, services: { future: 'x', later: [1], fx: { a: {} } } });
+	assert.deepEqual([...entries.keys()].sort(), ['USD', 'fx/a']);
+	assert.deepEqual(warnings.sort(), ['dropped service type: future', 'dropped service type: later']);
+});
+test('flatten drops keys with control characters', () => {
+	const { entries, warnings } = flatten({
+		version: 1,
+		'x\ny': 1,
+		currencyMap: { '$A\n## build': 'x', $B: 'y' },
+		services: { 'fx\u0000': {}, fx: { 'a\r\n+ fx/b': {}, c: {} } }
+	});
+	assert.deepEqual([...entries.keys()].sort(), ['$B', 'fx/c']);
+	assert.deepEqual(warnings.sort(), [
+		'dropped key with control characters: "$A\\n## build"',
+		'dropped key with control characters: "fx/a\\r\\n+ fx/b"',
+		'dropped key with control characters: "fx\\u0000"',
+		'dropped key with control characters: "x\\ny"'
+	]);
+});
 test('flatten treats a missing currencyMap or services as empty', () => {
 	const { entries, warnings } = flatten({ version: 1 });
 	assert.equal(entries.size, 0);
