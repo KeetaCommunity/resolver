@@ -15,4 +15,7 @@ check:
 	npx tsc --noEmit
 	node --test 'test/**/*.test.ts'
 
-.PHONY: dist clean check
+detect:
+	for network in $(NETWORKS); do node bin/detect.ts $$network pr-body-$$network.md; done
+
+.PHONY: dist clean check detect
