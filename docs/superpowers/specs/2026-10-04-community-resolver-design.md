@@ -229,14 +229,25 @@ hand. It runs `bin/detect.ts`:
    `peter-evans/create-pull-request` then creates or force-updates the
    branch `sources-update` and its single PR.
 
-`pr-body.md` (from `src/diff.ts`):
+`pr-body.md` (from `src/diff.ts`) is a fixed template with no prose. It has
+one line per fact, grouped by source. A section that is empty is left out:
 
-- The entries that are added, removed, or changed, grouped by source (for
-  example: `velocity: + fx/new-anchor`).
-- Sources that failed to fetch, with the error.
-- Warnings: dropped unknown keys, stale `exclude` items.
-- If the fresh build failed (a conflict or an invalid entry), the error. The
-  PR still opens, so that you see the error, but the required check fails.
+```
+## velocity
++ fx/new-anchor
+~ fx/velo-anchor
+- $OLD
+## pfp
+! fetch failed: HTTP 503 https://pfponkeeta.xyz/anchors/pfp/v2/services.json
+## build
+! conflict: $FOO velocity=keeta_aa… alpaca=keeta_bb…
+? exclude target missing: velocity fx/test-anchor
+```
+
+The markers are `+` (added), `-` (removed), `~` (changed), `!` (error), and
+`?` (warning). When the fresh build fails, the PR still opens, so that you
+see the error, but the required check fails. The README, the error messages,
+and the logs use the same plain, factual style.
 
 `.github/workflows/check.yml` runs on each PR. It runs `make check`
 (type-check and tests) and `make dist`.
@@ -264,8 +275,10 @@ hand. It runs `bin/detect.ts`:
   Cache-Control: public, max-age=60
 ```
 
-A browser wallet fetches the file directly, so CORS is necessary. The 60 s
-cache is the same as the default positive TTL of the SDK.
+A browser wallet fetches the file directly, so CORS is necessary. The SDK
+sends only `Accept`, which is a CORS-safelisted header, so the browser does
+not send a preflight. The file is public and needs no credentials, so `*` is
+safe. The 60 s cache is the same as the default positive TTL of the SDK.
 
 ### One-time manual setup (not in CI)
 
@@ -401,8 +414,5 @@ has parameters that only tests use.
 - The license for this repository. `@keetanetwork/anchor` is distributed
   under the "Keeta Token Network Community License v1.0". Check that the
   license you choose is compatible with it.
-- Whether `assetMovement/changenow-staging` belongs in a production
-  community resolver. The name of its source account is
-  `CHANGENOW_STAGING`.
 - The GitHub repository name and visibility, and the Cloudflare Pages
   project name.
