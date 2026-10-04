@@ -55,3 +55,6 @@ try {
 	}
 	throw(error);
 }
+
+// The KeetaNet client keeps network handles open, so the process would not exit by itself.
+process.exit(0);
