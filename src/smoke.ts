@@ -99,29 +99,27 @@ type RetryOptions = {
 	attempt: (number: number) => Promise<string[]>;
 	timeoutMs: number;
 	intervalMs: number;
-	sleep?: (milliseconds: number) => Promise<void>;
-	now?: () => number;
 };
+
+async function sleep(milliseconds: number): Promise<void> {
+	await new Promise((resolve) => {
+		setTimeout(resolve, milliseconds);
+	});
+}
 
 /*
  * GitHub Pages caches for 600 s, so a fresh deploy can take that long to show.
  * The last attempt lands on the deadline instead of overshooting it.
  */
 async function retryUntilClean(options: RetryOptions): Promise<string[]> {
-	const sleep = options.sleep ?? (async (milliseconds) => {
-		await new Promise((resolve) => {
-			setTimeout(resolve, milliseconds);
-		});
-	});
-	const now = options.now ?? Date.now;
-	const deadline = now() + options.timeoutMs;
+	const deadline = Date.now() + options.timeoutMs;
 
 	for (let number = 1; ; number++) {
 		const problems = await options.attempt(number);
 		if (problems.length === 0) {
 			return([]);
 		}
-		const remaining = deadline - now();
+		const remaining = deadline - Date.now();
 		if (remaining <= 0) {
 			return(problems);
 		}

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: MPL-2.0
 import { test } from 'node:test';
+import type { TestContext } from 'node:test';
 import * as assert from 'node:assert/strict';
 import { canonicalJSON } from '../src/json.ts';
 import type { JSONValue } from '../src/json.ts';
@@ -55,42 +56,53 @@ test('compareRoot reports an unresolvable root instead of throwing', async () =>
 	const resolver = { getRootMetadata: async () => { throw(new Error('no metadata')); }, listTokens: async () => [], stats: { reads: 0 } } as unknown as RootReader;
 	assert.deepEqual(await compareRoot(resolver, canonicalJSON(document)), ['root metadata unresolved: no metadata']);
 });
-test('retryUntilClean stops at the first clean attempt', async () => {
-	let clock = 0;
-	const slept: number[] = [];
-	const problems = await retryUntilClean({
+// Lets the loop run up to its next sleep, then moves the mocked clock on by one step.
+async function drive(t: TestContext, pending: Promise<string[]>, stepMs: number): Promise<string[]> {
+	let settled = false;
+	pending.then(() => {
+		settled = true;
+	}, () => {
+		settled = true;
+	});
+	for (let step = 0; step < 100 && !settled; step++) {
+		await new Promise((resolve) => {
+			setImmediate(resolve);
+		});
+		if (!settled) {
+			t.mock.timers.tick(stepMs);
+		}
+	}
+	return(await pending);
+}
+
+test('retryUntilClean stops at the first clean attempt', async (t) => {
+	t.mock.timers.enable({ apis: ['setTimeout', 'Date'] });
+	const times: number[] = [];
+	const pending = retryUntilClean({
 		attempt: async (number) => {
+			times.push(Date.now());
 			if (number < 3) {
 				return(['not yet']);
 			}
 			return([]);
 		},
 		timeoutMs: 100,
-		intervalMs: 10,
-		sleep: async (milliseconds) => {
-			slept.push(milliseconds);
-			clock += milliseconds;
-		},
-		now: () => clock
+		intervalMs: 10
 	});
-	assert.deepEqual(problems, []);
-	assert.deepEqual(slept, [10, 10]);
+	assert.deepEqual(await drive(t, pending, 1), []);
+	assert.deepEqual(times, [0, 10, 20]);
 });
-test('retryUntilClean returns the last problems at the deadline without overshooting it', async () => {
-	let clock = 0;
-	const slept: number[] = [];
-	const problems = await retryUntilClean({
+test('retryUntilClean returns the last problems at the deadline without overshooting it', async (t) => {
+	t.mock.timers.enable({ apis: ['setTimeout', 'Date'] });
+	const times: number[] = [];
+	const pending = retryUntilClean({
 		attempt: async (number) => {
+			times.push(Date.now());
 			return([`attempt ${number}`]);
 		},
 		timeoutMs: 25,
-		intervalMs: 10,
-		sleep: async (milliseconds) => {
-			slept.push(milliseconds);
-			clock += milliseconds;
-		},
-		now: () => clock
+		intervalMs: 10
 	});
-	assert.deepEqual(slept, [10, 10, 5]);
-	assert.deepEqual(problems, ['attempt 4']);
+	assert.deepEqual(await drive(t, pending, 1), ['attempt 4']);
+	assert.deepEqual(times, [0, 10, 20, 25]);
 });
