@@ -9,13 +9,14 @@ Publish a Keeta **community resolver**: a curated set of service and currency
 entries for legitimate anchors that are not (yet) in the main resolver.
 
 - Resolver account: `keeta_aqlemsriu5wyoyzd4r5rgfn6qpndmua5tx2hx7k3vl6ustcal2ekcommunity`
-- Hosted document: `https://resolver.xescu.re/metadata.json`
+- Hosted documents: `https://resolver.xescu.re/<network>/metadata.json`
+- Repository: `KeetaCommunity/resolver`. License: MPL-2.0.
 - Clients use it as a **secondary root**: `new Resolver({ root: [mainRoot, communityRoot], … })`.
   The SDK gives the first root priority, so the community resolver adds entries
   and never overrides the main resolver.
 
-The repository is public. It must stay small, easy to audit, and easy to
-review.
+The repository will be public. It must stay small, easy to audit, and easy
+to review.
 
 ### Non-goals
 
@@ -46,6 +47,30 @@ sources.json ──► fetch ──► snapshots/<sourceID>.json   (raw, fully r
 - **Hosting.** A static JSON file on GitHub Pages. The on-chain metadata
   of the resolver account is one external reference to that file. You set
   it once, by hand.
+
+### Networks
+
+- One repository serves every network. Each network is a directory,
+  `networks/<network>/`, that holds `sources.json` and `snapshots/`.
+  `<network>` is a KeetaNet network alias (`main`, `test`). The list of
+  network aliases is checked at compile time against the network type of
+  the KeetaNet client.
+- If a network directory does not exist, that network is not built or
+  published. v1 has only `main`. The `test` directory is added with its
+  first source.
+- The output of a network is `dist/<network>/metadata.json`. It is served at
+  `https://resolver.xescu.re/<network>/metadata.json`.
+- The resolver account key is the same on every network, because a key
+  does not depend on the network. Each network has its own on-chain
+  metadata, which points to the URL of that network.
+- Fetch, build, detect, and the smoke test run once for each network, with
+  a client for that network. Each network has its own update branch and PR
+  (`sources-update-<network>`), so you can review each network separately.
+- In the rest of this spec, `sources.json` and `snapshots/` are relative to
+  `networks/<network>/`, and `dist/metadata.json` means
+  `dist/<network>/metadata.json`.
+- **Why not a fork.** A fork would need every fix twice, a second Pages
+  site, and a second domain.
 
 ## 3. Entry model
 
@@ -228,7 +253,7 @@ hand. It runs `bin/detect.ts`:
 4. If they differ, write the fresh snapshots, run `make check` and
    `make dist` on them, and write `pr-body.md`. Then
    `peter-evans/create-pull-request` creates or force-updates the branch
-   `sources-update` and its single PR. The job needs
+   `sources-update-<network>` and its single PR. The job needs
    `permissions: { contents: write, pull-requests: write }`.
 
 A PR that the built-in `GITHUB_TOKEN` creates does not start other
@@ -274,7 +299,7 @@ The host is GitHub Pages. `.github/workflows/deploy.yml` runs on each push to
    community account as the root, resolves all of the root metadata, and
    deep-compares it with `dist/metadata.json`. It also checks that
    `listTokens()` returns each currency entry. It also fetches
-   `https://resolver.xescu.re/metadata.json` with an `Origin` header. The
+   `https://resolver.xescu.re/<network>/metadata.json` with an `Origin` header. The
    response must have `Access-Control-Allow-Origin: *` and a `Content-Type`
    of `application/json`. Because of the 600 s cache, it tries again for up
    to 12 minutes before it fails.
@@ -309,14 +334,14 @@ about 22 KB with gzip.
 - Make the repository public. In Settings → Pages, set the source to
   "GitHub Actions", set the custom domain to `resolver.xescu.re`, and
   enable "Enforce HTTPS".
-- In the Cloudflare DNS for `xescu.re`, add `resolver CNAME <user>.github.io`
+- In the Cloudflare DNS for `xescu.re`, add `resolver CNAME keetacommunity.github.io`
   as **DNS only** (not proxied), so that GitHub can issue the certificate.
-- In the account settings of the GitHub owner, open Pages and verify the
-  domain `xescu.re` (one TXT record). This stops other GitHub users from
+- In the settings of the `KeetaCommunity` organization, open Pages and
+  verify the domain `xescu.re` (one TXT record). This stops other GitHub users from
   claiming `resolver.xescu.re` if the Pages site is ever disabled while the
   CNAME exists.
-- Set the on-chain metadata of the resolver account to
-  `Resolver.Metadata.formatMetadata({ external: '2b828e33-2692-46e9-817e-9b93d63f28fd', url: 'https://resolver.xescu.re/metadata.json' })`.
+- On each network, set the on-chain metadata of the resolver account to
+  `Resolver.Metadata.formatMetadata({ external: '2b828e33-2692-46e9-817e-9b93d63f28fd', url: 'https://resolver.xescu.re/<network>/metadata.json' })`.
   The owner of the account key signs this. The README documents the
   snippet. The SDK supports a root that is only one external reference, and
   its test suite covers this case.
@@ -353,8 +378,8 @@ about 22 KB with gzip.
 
 ```
 community-resolver/
-  sources.json
-  snapshots/<sourceID>.json
+  networks/main/sources.json
+  networks/main/snapshots/<sourceID>.json
   src/
     entries.ts     EntryKey, key encode/decode, flatten/unflatten, known service types
     sources.ts     sources.json decode + validation
@@ -389,7 +414,8 @@ and about 200 lines of build and CI configuration.
   helpers (`assertNever` and `AssertNever` from `lib/utils/never`). Do not
   copy them into the repository.
 - **Make** owns the build graph:
-  - `dist/metadata.json` depends on `sources.json`, `snapshots/*.json`,
+  - `dist/<network>/metadata.json` depends on
+    `networks/<network>/sources.json`, `networks/<network>/snapshots/*.json`,
     `src/*.ts`, `bin/build.ts`, and the lockfile.
   - `make check` runs the type-check and the tests.
   - `fetch` and `detect` are phony targets. They have network side effects
@@ -441,10 +467,14 @@ local plain-HTTP fixture that is reachable through the SDK's
 `sources.json` validation still rejects `http:` URLs. No production code
 has parameters that only tests use.
 
-## 15. Decisions for the owner before publishing
+## 15. Decisions
 
-- The license for this repository. `@keetanetwork/anchor` is distributed
-  under the "Keeta Token Network Community License v1.0". Check that the
-  license you choose is compatible with it.
-- The GitHub repository name and owner. The owner name is in the CNAME
-  target `<user>.github.io`.
+- Repository: `KeetaCommunity/resolver`. The repository is private until v1
+  is complete. Then it becomes public, which GitHub Pages on the free plan
+  requires.
+- License: MPL-2.0 for the code and configuration of this repository. The
+  repository has a `LICENSE` file, and each source file starts with
+  `// SPDX-License-Identifier: MPL-2.0`. The license does not cover the
+  dependencies, which keep their own licenses. One README line states that
+  `snapshots/` holds data that the listed sources published.
+- Networks: one repository for every network, not a fork for each network.
