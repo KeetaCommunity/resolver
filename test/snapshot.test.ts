@@ -41,7 +41,8 @@ test('an entry key of __proto__ survives a round trip', () => {
 	const snapshot: Snapshot = { sourceID: 's', url: 'https://example.com', entries: new Map([['__proto__', { x: 1 }]]) };
 	const decoded = decodeSnapshot(encodeSnapshot(snapshot));
 	assert.deepEqual(decoded, snapshot);
-	assert.equal(Object.getPrototypeOf({}), Object.prototype);
+	// Decoding must not have set the shared prototype.
+	assert.equal(({} as Record<string, unknown>)['x'], undefined);
 });
 test('decode rejects an unknown version', () => {
 	assert.throws(() => decodeSnapshot(JSON.stringify({ ...base, version: 2 })), isInvalidSnapshot);

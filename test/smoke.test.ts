@@ -9,13 +9,12 @@ import type { RootReader } from '../src/smoke.ts';
 
 const tokenAccount = 'keeta_anqdilpazdekdu4acw65fj7smltcp26wbrildkqtszqvverljpwpezmd44ssg';
 
-// The stub implements only the two methods that compareRoot calls.
+// The stub implements only what compareRoot uses.
 function stubResolver(root: JSONValue, tokenCount: number): RootReader {
 	const tokens: { token: string; currency: string }[] = [];
 	for (let index = 0; index < tokenCount; index++) {
 		tokens.push({ token: tokenAccount, currency: `C${index}` });
 	}
-	// eslint-disable-next-line @typescript-eslint/consistent-type-assertions
 	return({ getRootMetadata: async () => root, listTokens: async () => tokens, stats: { reads: 0 } } as unknown as RootReader);
 }
 
@@ -52,7 +51,6 @@ test('compareRoot reports a token count that differs from the currency entries',
 	assert.deepEqual(await compareRoot(stubResolver(document, 1), canonicalJSON(document)), ['listTokens count 1 != currency entries 2']);
 });
 test('compareRoot reports an unresolvable root instead of throwing', async () => {
-	// eslint-disable-next-line @typescript-eslint/consistent-type-assertions
 	const resolver = { getRootMetadata: async () => { throw(new Error('no metadata')); }, listTokens: async () => [], stats: { reads: 0 } } as unknown as RootReader;
 	assert.deepEqual(await compareRoot(resolver, canonicalJSON(document)), ['root metadata unresolved: no metadata']);
 });

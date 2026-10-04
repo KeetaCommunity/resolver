@@ -57,9 +57,7 @@ function createFetchContext(options: FetchContextOptions): FetchContext {
 	 * The stub implements only getAccountInfo, which is all the SDK calls. It
 	 * cannot satisfy the client types, hence the casts through unknown.
 	 */
-	// eslint-disable-next-line @typescript-eslint/consistent-type-assertions
 	const resolverClient = { client: options.client } as unknown as ConstructorParameters<typeof Resolver>[0]['client'];
-	// eslint-disable-next-line @typescript-eslint/consistent-type-assertions
 	const client = options.client as MetadataConfig['client'];
 	const resolver = new Resolver({ root, client: resolverClient, trustedCAs: [] });
 	return({ resolver, client, cache: new Map(), allowInsecureProtocols: options.allowInsecureProtocols });

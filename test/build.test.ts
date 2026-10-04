@@ -4,6 +4,9 @@ import * as assert from 'node:assert/strict';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
+import * as KeetaNet from '@keetanetwork/keetanet-client';
+import { extractSignedFields } from '@keetanetwork/anchor/lib/anchor-metadata-server.js';
+import { SignData, objectToSignable } from '@keetanetwork/anchor/lib/utils/signing.js';
 import { buildNetwork, readNetworkInput } from '../src/build.ts';
 import type { NetworkInput } from '../src/build.ts';
 import { flatten } from '../src/entries.ts';
@@ -267,4 +270,50 @@ test('a tampered signed entry that is excluded does not fail the build', async (
 	source.selection = { kind: 'exclude', keys: ['assetMovement/changenow-staging'] };
 	const result = await buildNetwork(input);
 	assert.equal(result.document.services['assetMovement'], undefined);
+});
+
+const fxOperations = { getEstimate: 'https://a.example/e', getQuote: 'https://a.example/q', createExchange: 'https://a.example/c', getExchangeStatus: 'https://a.example/s/{id}' };
+
+// Signs the way an anchor's metadata server does.
+async function signedFXDocument(): Promise<JSONValue> {
+	const signer = KeetaNet.lib.Account.fromSeed('0'.repeat(64), 0);
+	const account = signer.publicKeyString.get();
+	const signed = await SignData(signer, objectToSignable(extractSignedFields(account, { operations: fxOperations })));
+	return({
+		version: 1,
+		currencyMap: { $KTA: kta, $PEPE: pepe, $DOGE: doge },
+		services: { fx: { a: { operations: fxOperations, from: [{ currencyCodes: [kta], to: [pepe, doge] }], account, signed } } }
+	});
+}
+
+test('a signed fx entry left whole keeps its signature and validates', async () => {
+	const document = await signedFXDocument();
+	const source = customSource('a', { kind: 'all' });
+	const result = await buildNetwork(customInput([{ source, document }]));
+	const entry = result.document.services['fx']?.['a'];
+	assert.equal(canonicalJSON(entry ?? null), canonicalJSON(flatten(document).entries.get('fx/a') ?? null));
+	assert.deepEqual(result.warnings, []);
+});
+
+test('a signed fx entry with a pruned token loses its signature and validates', async () => {
+	const document = await signedFXDocument();
+	const source = customSource('a', { kind: 'exclude', keys: ['$DOGE'] });
+	// buildNetwork validates the document, so it resolving is the validation passing.
+	const result = await buildNetwork(customInput([{ source, document }]));
+	assert.deepEqual(result.document.services['fx']?.['a'], {
+		operations: fxOperations,
+		from: [{ currencyCodes: [kta], to: [pepe] }]
+	});
+	assert.deepEqual(result.warnings, [`fx/a: removed token ${doge}`, 'fx/a: signature removed (entry modified)']);
+});
+
+test('a signed assetMovement entry is published byte for byte', async () => {
+	const result = await buildNetwork(makeInput(sourceNames));
+	const upstream = flatten(fixture('changenow')).entries.get('assetMovement/changenow-staging');
+	const published = result.document.services['assetMovement']?.['changenow-staging'];
+	if (upstream === undefined || published === undefined) {
+		throw(new Error('changenow-staging entry missing'));
+	}
+	assert.ok(typeof upstream === 'object' && upstream !== null && 'signed' in upstream);
+	assert.equal(canonicalJSON(published), canonicalJSON(upstream));
 });
