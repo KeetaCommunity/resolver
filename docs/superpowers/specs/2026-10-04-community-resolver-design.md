@@ -34,7 +34,7 @@ sources.json ──► fetch ──► snapshots/<sourceID>.json   (raw, fully r
                                  ▼
                    merge all sources ──► conflict? → fail
                                  ▼
-                   unflatten ──► validate ──► dist/metadata.json ──► Cloudflare Pages
+                   unflatten ──► validate ──► dist/metadata.json ──► GitHub Pages
 ```
 
 - **Pinning.** The published document is built only from committed
@@ -43,7 +43,7 @@ sources.json ──► fetch ──► snapshots/<sourceID>.json   (raw, fully r
   output from the fresh data. It compares that output with the output built
   from the committed snapshots. If the two differ, the job opens or updates
   one rolling PR.
-- **Hosting.** A static JSON file on Cloudflare Pages. The on-chain metadata
+- **Hosting.** A static JSON file on GitHub Pages. The on-chain metadata
   of the resolver account is one external reference to that file. You set
   it once, by hand.
 
@@ -225,9 +225,17 @@ hand. It runs `bin/detect.ts`:
    snapshots. Compare the two outputs.
 3. If the outputs are the same, stop. A change to entries that are not
    published does not open a PR.
-4. If they differ, write the fresh snapshots and `pr-body.md`.
-   `peter-evans/create-pull-request` then creates or force-updates the
-   branch `sources-update` and its single PR.
+4. If they differ, write the fresh snapshots, run `make check` and
+   `make dist` on them, and write `pr-body.md`. Then
+   `peter-evans/create-pull-request` creates or force-updates the branch
+   `sources-update` and its single PR. The job needs
+   `permissions: { contents: write, pull-requests: write }`.
+
+A PR that the built-in `GITHUB_TOKEN` creates does not start other
+workflows, so `check.yml` does not run on this PR. For that reason, detect
+runs the checks itself, and the result goes into the PR body. Deploy runs
+the checks again before it publishes. A broken merge fails the deploy and
+publishes nothing.
 
 `pr-body.md` (from `src/diff.ts`) is a fixed template with no prose. It has
 one line per fact, grouped by source. A section that is empty is left out:
@@ -245,8 +253,8 @@ one line per fact, grouped by source. A section that is empty is left out:
 ```
 
 The markers are `+` (added), `-` (removed), `~` (changed), `!` (error), and
-`?` (warning). When the fresh build fails, the PR still opens, so that you
-see the error, but the required check fails. The README, the error messages,
+`?` (warning). The `## build` section also has `ok` or the failing check.
+When the fresh build fails, the PR still opens, so that you see the error. The README, the error messages,
 and the logs use the same plain, factual style.
 
 `.github/workflows/check.yml` runs on each PR. It runs `make check`
@@ -254,53 +262,59 @@ and the logs use the same plain, factual style.
 
 ## 9. Deploy
 
-`.github/workflows/deploy.yml` runs on each push to `main`. GitHub Actions is
-the only way to deploy. Cloudflare does not build anything.
+The host is GitHub Pages. `.github/workflows/deploy.yml` runs on each push to
+`main`, and it is the only way to deploy.
 
 1. `make check` and `make dist`. If either fails, the workflow stops and
    nothing is deployed.
-2. `wrangler pages deploy dist --branch=main` (through
-   `cloudflare/wrangler-action`). Pages makes a new deployment that does not
-   change. Then it moves the production domain to the new deployment in one
-   step. Earlier deployments stay available for rollback. This step needs
-   the Cloudflare API token and the account ID as repository secrets. These
-   are the only secrets in the repository.
+2. `actions/upload-pages-artifact` (with the path `dist`), then
+   `actions/deploy-pages`. Pages publishes the artifact as a whole, in one
+   step.
 3. `bin/smoke.ts` runs against mainnet. It makes a real `Resolver` with the
    community account as the root, resolves all of the root metadata, and
    deep-compares it with `dist/metadata.json`. It also checks that
    `listTokens()` returns each currency entry. It also fetches
    `https://resolver.xescu.re/metadata.json` with an `Origin` header. The
-   response must have `Access-Control-Allow-Origin: *`,
-   `Content-Type: application/json`, and the cache header. Because of edge
-   caching, it tries again for up to 3 minutes before it fails.
+   response must have `Access-Control-Allow-Origin: *` and a `Content-Type`
+   of `application/json`. Because of the 600 s cache, it tries again for up
+   to 12 minutes before it fails.
 
-The workflow uses `concurrency: { group: deploy, cancel-in-progress: false }`.
-Deploys run one at a time and in order, so an older run cannot finish last
-and overwrite a newer file.
+Workflow settings:
 
-Cloudflare Pages reads a file named `_headers` at the root of the deployed
-directory and applies the response headers in it for each path pattern. The
-source is `static/_headers`. `make dist` copies it to `dist/_headers`:
+- `permissions: { contents: read, pages: write, id-token: write }`. The
+  built-in `GITHUB_TOKEN` can deploy only this repository's Pages site.
+- `concurrency: { group: pages, cancel-in-progress: false }`. Deploys run one
+  at a time and in order, so an older run cannot finish last and overwrite a
+  newer file.
+- The repository has no secrets, and no Cloudflare credentials exist
+  anywhere. Cloudflare only serves one static DNS record.
 
-```
-/metadata.json
-  Content-Type: application/json
-  Access-Control-Allow-Origin: *
-  Cache-Control: public, max-age=60
-```
+Response headers come from GitHub Pages. You cannot configure them, and the
+smoke test checks them:
 
-A browser wallet fetches the file directly, so CORS is necessary. The SDK
-sends only `Accept`, which is a CORS-safelisted header, so the browser does
-not send a preflight. The file is public and needs no credentials, so `*` is
-safe. The 60 s cache is the same as the default positive TTL of the SDK.
+- `Access-Control-Allow-Origin: *`. A browser wallet fetches the file
+  directly, so CORS is necessary. The SDK sends only `Accept`, which is a
+  CORS-safelisted header, so the browser does not send a preflight. The file
+  is public and needs no credentials, so `*` is safe.
+- `Cache-Control: max-age=600`. An accepted change reaches clients within
+  about 11 minutes (the 600 s cache plus the 60 s cache of the SDK).
+- `Content-Type: application/json` comes from the `.json` extension.
+
+Limits on the free plan for a public repository: 1 GB of site size and
+100 GB of bandwidth per month (a soft limit). The output is about 130 KB, or
+about 22 KB with gzip.
 
 ### One-time manual setup (not in CI)
 
-- Make a Cloudflare Pages project of the type **Direct Upload**. Do not
-  connect it to Git. Connect the custom domain `resolver.xescu.re` to it.
-- Make a Cloudflare API token that has only the permission
-  `Cloudflare Pages: Edit`. Store it as the GitHub secret
-  `CLOUDFLARE_API_TOKEN`. Store the account ID as `CLOUDFLARE_ACCOUNT_ID`.
+- Make the repository public. In Settings → Pages, set the source to
+  "GitHub Actions", set the custom domain to `resolver.xescu.re`, and
+  enable "Enforce HTTPS".
+- In the Cloudflare DNS for `xescu.re`, add `resolver CNAME <user>.github.io`
+  as **DNS only** (not proxied), so that GitHub can issue the certificate.
+- In the account settings of the GitHub owner, open Pages and verify the
+  domain `xescu.re` (one TXT record). This stops other GitHub users from
+  claiming `resolver.xescu.re` if the Pages site is ever disabled while the
+  CNAME exists.
 - Set the on-chain metadata of the resolver account to
   `Resolver.Metadata.formatMetadata({ external: '2b828e33-2692-46e9-817e-9b93d63f28fd', url: 'https://resolver.xescu.re/metadata.json' })`.
   The owner of the account key signs this. The README documents the
@@ -318,7 +332,7 @@ safe. The 60 s cache is the same as the default positive TTL of the SDK.
 | An `exclude` target is missing | Warning only. |
 | An unknown top-level key or service type in a source | Dropped, with a warning. |
 | An SDK upgrade adds a service type | The type-check fails until the known-types list is updated. |
-| The deploy smoke test fails | The workflow fails. The previous Pages deployment stays available, and you can roll back in Cloudflare. |
+| The deploy smoke test fails | The workflow fails. To roll back, revert the merge commit. The revert deploys the previous output. |
 
 ## 11. Trust model
 
@@ -328,9 +342,10 @@ safe. The 60 s cache is the same as the default positive TTL of the SDK.
   signatures never expire (`maxSkewMs: Infinity`), so they still verify
   after they are copied. Clients can filter with `accounts: […]` to trust
   only entries from particular signers.
-- **Delivery:** HTTPS through Cloudflare, published by GitHub Actions. The
-  on-chain pointer can only change through a block signed by the key of the
-  resolver account. That key never goes into CI.
+- **Delivery:** HTTPS through GitHub Pages, published by GitHub Actions. The
+  deploy token can only affect this repository. Cloudflare holds only the
+  DNS record. The on-chain pointer can only change through a block signed by
+  the key of the resolver account. That key never goes into CI.
 - **Precedence:** clients put the main resolver first, so the community
   resolver cannot override the main resolver.
 
@@ -354,7 +369,6 @@ community-resolver/
     build.ts       snapshots + rules → dist/metadata.json
     smoke.ts       post-deploy check against mainnet
   test/
-  static/_headers
   Makefile
   .github/workflows/{detect,check,deploy}.yml
   README.md
@@ -377,8 +391,6 @@ and about 200 lines of build and CI configuration.
 - **Make** owns the build graph:
   - `dist/metadata.json` depends on `sources.json`, `snapshots/*.json`,
     `src/*.ts`, `bin/build.ts`, and the lockfile.
-  - `dist/_headers` depends on `static/_headers`. `make dist` builds both
-    files.
   - `make check` runs the type-check and the tests.
   - `fetch` and `detect` are phony targets. They have network side effects
     and are not build artifacts.
@@ -434,5 +446,5 @@ has parameters that only tests use.
 - The license for this repository. `@keetanetwork/anchor` is distributed
   under the "Keeta Token Network Community License v1.0". Check that the
   license you choose is compatible with it.
-- The GitHub repository name and visibility, and the Cloudflare Pages
-  project name.
+- The GitHub repository name and owner. The owner name is in the CNAME
+  target `<user>.github.io`.
