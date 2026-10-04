@@ -1,1 +1,30 @@
-{ "version": 1, "sources": [] }
+{
+  "version": 1,
+  "sources": [
+    {
+      "sourceID": "murphy",
+      "url": "keetanet://keeta_athqkb6yw6h2e436xxaakuy4bctrqkqfctvy5xsp3ugvb3avv56zruxjcxauq/metadata"
+    },
+    {
+      "sourceID": "changenow",
+      "url": "keetanet://keeta_aabfqkxq6dinrdwermtn3n6uf7q2uudqzov3pn3pbrkjtebr45uspgiva2epm2a/metadata"
+    },
+    {
+      "sourceID": "pfp",
+      "url": "keetanet://keeta_aabdoyva5z5wpnx6a7ebgpwzopbipsbzhuyp5opoj2xro2vska6jjxqip5u62wa/metadata"
+    },
+    {
+      "sourceID": "alpaca",
+      "url": "keetanet://keeta_aabyuc4ce7n7n7gyjbcszpxlawujaacpu2wj72fljjjhhhyf25xmj66gand2ori/metadata"
+    },
+    {
+      "sourceID": "keetahub",
+      "url": "keetanet://keeta_aabedhf4fmuokpj6n4tpgadoixbdi4fp7o5f53vquykusndewrllxjqywphutqy/metadata"
+    },
+    {
+      "sourceID": "velocity",
+      "url": "keetanet://keeta_aab2lqgwz56u6dvfbqtsadcnfc2y4wdvl7rd2pkboxoray5mj3hmdzot2neu4wq/metadata",
+      "exclude": ["fx/test-anchor", "$TEST"]
+    }
+  ]
+}

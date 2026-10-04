@@ -1,0 +1,58 @@
+{
+  "entries": {
+    "$KTA": "keeta_anqdilpazdekdu4acw65fj7smltcp26wbrildkqtszqvverljpwpezmd44ssg",
+    "$MURF": "keeta_ao7nitutebhm2pkrfbtniepivaw324hecyb43wsxts5rrhi2p5ckgof37racm",
+    "$PACA": "keeta_ao55q4okjv4hrbo7z7zl3hivrf64og3fpokup5hvt2wfejim5mxzxcykboc3w",
+    "fx/murphy": {
+      "from": [
+        {
+          "currencyCodes": [
+            "keeta_anqdilpazdekdu4acw65fj7smltcp26wbrildkqtszqvverljpwpezmd44ssg",
+            "keeta_ao7nitutebhm2pkrfbtniepivaw324hecyb43wsxts5rrhi2p5ckgof37racm"
+          ],
+          "to": [
+            "keeta_ao7nitutebhm2pkrfbtniepivaw324hecyb43wsxts5rrhi2p5ckgof37racm",
+            "keeta_anqdilpazdekdu4acw65fj7smltcp26wbrildkqtszqvverljpwpezmd44ssg"
+          ]
+        }
+      ],
+      "operations": {
+        "createExchange": "https://anchor.murf.fi/api/createExchange",
+        "getEstimate": "https://anchor.murf.fi/api/getEstimate",
+        "getExchangeStatus": "https://anchor.murf.fi/api/getExchangeStatus/{id}",
+        "getQuote": "https://anchor.murf.fi/api/getQuote"
+      }
+    },
+    "fx/murphy-alpaca": {
+      "from": [
+        {
+          "currencyCodes": [
+            "keeta_anqdilpazdekdu4acw65fj7smltcp26wbrildkqtszqvverljpwpezmd44ssg"
+          ],
+          "to": [
+            "keeta_ao7nitutebhm2pkrfbtniepivaw324hecyb43wsxts5rrhi2p5ckgof37racm",
+            "keeta_ao55q4okjv4hrbo7z7zl3hivrf64og3fpokup5hvt2wfejim5mxzxcykboc3w"
+          ]
+        },
+        {
+          "currencyCodes": [
+            "keeta_ao7nitutebhm2pkrfbtniepivaw324hecyb43wsxts5rrhi2p5ckgof37racm",
+            "keeta_ao55q4okjv4hrbo7z7zl3hivrf64og3fpokup5hvt2wfejim5mxzxcykboc3w"
+          ],
+          "to": [
+            "keeta_anqdilpazdekdu4acw65fj7smltcp26wbrildkqtszqvverljpwpezmd44ssg"
+          ]
+        }
+      ],
+      "operations": {
+        "createExchange": "https://api.alpacadex.com/create-exchange",
+        "getEstimate": "https://api.alpacadex.com/estimate",
+        "getExchangeStatus": "https://api.alpacadex.com/exchange-status/{id}",
+        "getQuote": "https://api.alpacadex.com/quote"
+      }
+    }
+  },
+  "sourceID": "murphy",
+  "url": "keetanet://keeta_athqkb6yw6h2e436xxaakuy4bctrqkqfctvy5xsp3ugvb3avv56zruxjcxauq/metadata",
+  "version": 1
+}

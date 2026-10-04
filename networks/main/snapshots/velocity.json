@@ -1,0 +1,127 @@
+{
+  "entries": {
+    "$ABCD": "keeta_anqls6k3tjv524ztyeoxbznngbci4h5kvpj6wkwf5nyz5jwgr7csh6iopgvms",
+    "$BD": "keeta_apkk633qajaxkitdzi2utfrqbpxdym6ud5fcw42fzy75bxetptnnzs7bzjhcg",
+    "$BEER": "keeta_ansz55usdmxbhox4oexl4ltotjds5mvxyoepsb6kkh44jil3a4oglrozkkcnu",
+    "$CITY": "keeta_ap54ndipg42acfu72omlvnd3cyhu6godautwszwamn56kqhay6vsmsshkf6cc",
+    "$COIN": "keeta_amnnundjbrkue7klk5nfslmbqle7add73lbnvl724w3myuipr2oayuqf2po7y",
+    "$CPU": "keeta_angnqzibvjjw3ei63sowtharox5p5rd4idwsmk6a45cptz5jj4jywpjgapb4g",
+    "$DOGE": "keeta_amnm6tkd74unfbwxqlnbqt2gfe6uq6ymiwqums7jned2fbsz22xhq2qhdx4sy",
+    "$FXTS": "keeta_anjhawezp4fg4s3nf42f42ixndwj55uf25aux746rh7ou4rdreesmf5b2tluo",
+    "$L": "keeta_am7w5ome7xmjwzyx4tjdxzkllwnrxab63hwpzf5iw3jwrqogmk2b7sfd4y2vs",
+    "$PEPE": "keeta_aoretuxg77xu34nwxkqw35wrboyafl6j2cnn44ssf66w5xcbyvjn6h2j7pgk2",
+    "$PRY": "keeta_aojfqftq2c6zy3ft4xtsh7caxwt5w67ktdt57ojc467l5ujh6jdzthu2cvqhq",
+    "$QWER": "keeta_apn7syxza6pwheulbuk5pio7ytdz774ntiazpuashxsucgrqpvevubfuwhmeq",
+    "$TARD": "keeta_apmzps3lwl7zmwcgpadxwdbeg76c6deicsys4ipt6e7ralycnu5f5hamd6gbw",
+    "$TBF": "keeta_anacmvjfhhul2wp4blrfypjbyyzddy2nbcamo4rhfbcuyflcrkx4zk7ba3xso",
+    "$TEST": "keeta_aoxtlnmtwoud4z23xfbrtkxvlbcbm7zkqytqhbqyckgcxwefeltakiywfdoju",
+    "$VELO": "keeta_aoaouus5bdywesklnhpj6atkrlsr7dguff4gl4zy3ohszzzjt4i4r2gqabrd2",
+    "fx/launchpad-anchor": {
+      "from": [
+        {
+          "currencyCodes": [
+            "keeta_anqdilpazdekdu4acw65fj7smltcp26wbrildkqtszqvverljpwpezmd44ssg"
+          ],
+          "to": [
+            "keeta_aoretuxg77xu34nwxkqw35wrboyafl6j2cnn44ssf66w5xcbyvjn6h2j7pgk2",
+            "keeta_amnm6tkd74unfbwxqlnbqt2gfe6uq6ymiwqums7jned2fbsz22xhq2qhdx4sy",
+            "keeta_angnqzibvjjw3ei63sowtharox5p5rd4idwsmk6a45cptz5jj4jywpjgapb4g",
+            "keeta_apmzps3lwl7zmwcgpadxwdbeg76c6deicsys4ipt6e7ralycnu5f5hamd6gbw",
+            "keeta_apkk633qajaxkitdzi2utfrqbpxdym6ud5fcw42fzy75bxetptnnzs7bzjhcg",
+            "keeta_ap54ndipg42acfu72omlvnd3cyhu6godautwszwamn56kqhay6vsmsshkf6cc",
+            "keeta_ansz55usdmxbhox4oexl4ltotjds5mvxyoepsb6kkh44jil3a4oglrozkkcnu",
+            "keeta_anqls6k3tjv524ztyeoxbznngbci4h5kvpj6wkwf5nyz5jwgr7csh6iopgvms",
+            "keeta_anacmvjfhhul2wp4blrfypjbyyzddy2nbcamo4rhfbcuyflcrkx4zk7ba3xso",
+            "keeta_aojfqftq2c6zy3ft4xtsh7caxwt5w67ktdt57ojc467l5ujh6jdzthu2cvqhq",
+            "keeta_amnnundjbrkue7klk5nfslmbqle7add73lbnvl724w3myuipr2oayuqf2po7y",
+            "keeta_apn7syxza6pwheulbuk5pio7ytdz774ntiazpuashxsucgrqpvevubfuwhmeq",
+            "keeta_anjhawezp4fg4s3nf42f42ixndwj55uf25aux746rh7ou4rdreesmf5b2tluo",
+            "keeta_am7w5ome7xmjwzyx4tjdxzkllwnrxab63hwpzf5iw3jwrqogmk2b7sfd4y2vs"
+          ]
+        },
+        {
+          "currencyCodes": [
+            "keeta_aoretuxg77xu34nwxkqw35wrboyafl6j2cnn44ssf66w5xcbyvjn6h2j7pgk2",
+            "keeta_amnm6tkd74unfbwxqlnbqt2gfe6uq6ymiwqums7jned2fbsz22xhq2qhdx4sy",
+            "keeta_angnqzibvjjw3ei63sowtharox5p5rd4idwsmk6a45cptz5jj4jywpjgapb4g",
+            "keeta_apmzps3lwl7zmwcgpadxwdbeg76c6deicsys4ipt6e7ralycnu5f5hamd6gbw",
+            "keeta_apkk633qajaxkitdzi2utfrqbpxdym6ud5fcw42fzy75bxetptnnzs7bzjhcg",
+            "keeta_ap54ndipg42acfu72omlvnd3cyhu6godautwszwamn56kqhay6vsmsshkf6cc",
+            "keeta_ansz55usdmxbhox4oexl4ltotjds5mvxyoepsb6kkh44jil3a4oglrozkkcnu",
+            "keeta_anqls6k3tjv524ztyeoxbznngbci4h5kvpj6wkwf5nyz5jwgr7csh6iopgvms",
+            "keeta_anacmvjfhhul2wp4blrfypjbyyzddy2nbcamo4rhfbcuyflcrkx4zk7ba3xso",
+            "keeta_aojfqftq2c6zy3ft4xtsh7caxwt5w67ktdt57ojc467l5ujh6jdzthu2cvqhq",
+            "keeta_amnnundjbrkue7klk5nfslmbqle7add73lbnvl724w3myuipr2oayuqf2po7y",
+            "keeta_apn7syxza6pwheulbuk5pio7ytdz774ntiazpuashxsucgrqpvevubfuwhmeq",
+            "keeta_anjhawezp4fg4s3nf42f42ixndwj55uf25aux746rh7ou4rdreesmf5b2tluo",
+            "keeta_am7w5ome7xmjwzyx4tjdxzkllwnrxab63hwpzf5iw3jwrqogmk2b7sfd4y2vs"
+          ],
+          "to": [
+            "keeta_anqdilpazdekdu4acw65fj7smltcp26wbrildkqtszqvverljpwpezmd44ssg"
+          ]
+        }
+      ],
+      "operations": {
+        "createExchange": "https://velocityonkeeta.com/launchpad-fx/api/fx/createExchange",
+        "getEstimate": "https://velocityonkeeta.com/launchpad-fx/api/fx/getEstimate",
+        "getExchangeStatus": "https://velocityonkeeta.com/launchpad-fx/api/fx/getExchangeStatus/{id}",
+        "getQuote": "https://velocityonkeeta.com/launchpad-fx/api/fx/getQuote"
+      }
+    },
+    "fx/test-anchor": {
+      "from": [
+        {
+          "currencyCodes": [
+            "keeta_anqdilpazdekdu4acw65fj7smltcp26wbrildkqtszqvverljpwpezmd44ssg"
+          ],
+          "to": [
+            "keeta_aoxtlnmtwoud4z23xfbrtkxvlbcbm7zkqytqhbqyckgcxwefeltakiywfdoju"
+          ]
+        },
+        {
+          "currencyCodes": [
+            "keeta_aoxtlnmtwoud4z23xfbrtkxvlbcbm7zkqytqhbqyckgcxwefeltakiywfdoju"
+          ],
+          "to": [
+            "keeta_anqdilpazdekdu4acw65fj7smltcp26wbrildkqtszqvverljpwpezmd44ssg"
+          ]
+        }
+      ],
+      "operations": {
+        "createExchange": "https://velocityonkeeta.com/test-fx/api/createExchange",
+        "getEstimate": "https://velocityonkeeta.com/test-fx/api/getEstimate",
+        "getExchangeStatus": "https://velocityonkeeta.com/test-fx/api/getExchangeStatus/{id}",
+        "getQuote": "https://velocityonkeeta.com/test-fx/api/getQuote"
+      }
+    },
+    "fx/velo-anchor": {
+      "from": [
+        {
+          "currencyCodes": [
+            "keeta_anqdilpazdekdu4acw65fj7smltcp26wbrildkqtszqvverljpwpezmd44ssg"
+          ],
+          "to": [
+            "keeta_aoaouus5bdywesklnhpj6atkrlsr7dguff4gl4zy3ohszzzjt4i4r2gqabrd2"
+          ]
+        },
+        {
+          "currencyCodes": [
+            "keeta_aoaouus5bdywesklnhpj6atkrlsr7dguff4gl4zy3ohszzzjt4i4r2gqabrd2"
+          ],
+          "to": [
+            "keeta_anqdilpazdekdu4acw65fj7smltcp26wbrildkqtszqvverljpwpezmd44ssg"
+          ]
+        }
+      ],
+      "operations": {
+        "createExchange": "https://velocityonkeeta.com/velo-fx/api/createExchange",
+        "getEstimate": "https://velocityonkeeta.com/velo-fx/api/getEstimate",
+        "getExchangeStatus": "https://velocityonkeeta.com/velo-fx/api/getExchangeStatus/{id}",
+        "getQuote": "https://velocityonkeeta.com/velo-fx/api/getQuote"
+      }
+    }
+  },
+  "sourceID": "velocity",
+  "url": "keetanet://keeta_aab2lqgwz56u6dvfbqtsadcnfc2y4wdvl7rd2pkboxoray5mj3hmdzot2neu4wq/metadata",
+  "version": 1
+}
